@@ -423,61 +423,165 @@ function AppleHealthPreview({ preview }) {
   );
 }
 
-function AppleHealthImportStatus({ status, result }) {
-  if (!status && !result) {
+function ActionButton({ children, disabled, onClick, variant = "primary" }) {
+  const className =
+    variant === "secondary"
+      ? "rounded-full bg-white px-5 py-3 text-sm font-semibold text-ink transition disabled:cursor-not-allowed disabled:opacity-60"
+      : "rounded-full bg-blue px-5 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60";
+
+  return (
+    <button type="button" disabled={disabled} className={className} onClick={onClick}>
+      {children}
+    </button>
+  );
+}
+
+function AppleHealthWorkflowCard({ job, onRefreshPage }) {
+  if (!job) {
     return null;
   }
 
+  const steps =
+    job.kind === "preview-latest"
+      ? ["尋找 iCloud Drive 最新 zip", "解壓 export.xml", "分析最近 30 日資料"]
+      : job.kind === "import-latest"
+        ? ["尋找 iCloud Drive 最新 zip", "解壓 export.xml", "寫入 PostgreSQL"]
+        : job.kind === "preview-file"
+          ? ["讀取你上傳的 export.xml", "分析可匯入資料", "產生預覽摘要"]
+          : ["讀取你上傳的 export.xml", "寫入 PostgreSQL", "整理匯入結果"];
+
   return (
     <div className="space-y-4">
-      {status ? (
-        <div className="rounded-[24px] border border-blue/15 bg-blue/5 p-5">
-          <div className="flex items-center gap-3">
-            <div className="h-3 w-3 animate-pulse rounded-full bg-blue" />
-            <p className="text-sm font-semibold text-ink">{status.title}</p>
-          </div>
-          <p className="mt-2 text-sm leading-6 text-slate-600">{status.description}</p>
+      <div className="rounded-[24px] border border-slate-200 bg-white/80 p-5">
+        <div className="flex items-center gap-3">
+          <div
+            className={`h-3 w-3 rounded-full ${
+              job.phase === "running"
+                ? "animate-pulse bg-blue"
+                : job.phase === "error"
+                  ? "bg-rose-500"
+                  : "bg-emerald-500"
+            }`}
+          />
+          <p className="text-base font-semibold text-ink">{job.title}</p>
+        </div>
+        <p className="mt-2 text-sm leading-6 text-slate-600">{job.description}</p>
+        <div className="mt-4 grid gap-2">
+          {steps.map((step, index) => (
+            <div
+              key={step}
+              className={`rounded-2xl px-4 py-3 text-sm ${
+                index === 0 && job.phase === "running"
+                  ? "bg-blue/10 text-ink"
+                  : "bg-slate-50 text-slate-600"
+              }`}
+            >
+              {index + 1}. {step}
+            </div>
+          ))}
+        </div>
+        {job.phase === "running" ? (
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-blue/10">
             <div className="h-full w-2/3 animate-pulse rounded-full bg-blue" />
           </div>
-        </div>
-      ) : null}
+        ) : null}
+        {job.phase === "error" ? (
+          <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {job.error}
+          </div>
+        ) : null}
+      </div>
 
-      {result ? (
+      {job.result ? (
         <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 p-5">
-          <p className="text-base font-semibold text-ink">最近一次匯入結果</p>
+          <p className="text-base font-semibold text-ink">
+            {job.result.preview ? "最近一次預覽結果" : "最近一次匯入結果"}
+          </p>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <div className="rounded-2xl bg-white/80 p-4">
-              <p className="text-sm text-slate-500">新增健康紀錄</p>
-              <p className="mt-1 text-2xl font-semibold text-ink">{result.importedRecordCount}</p>
-            </div>
-            <div className="rounded-2xl bg-white/80 p-4">
-              <p className="text-sm text-slate-500">略過重複健康紀錄</p>
+              <p className="text-sm text-slate-500">
+                {job.result.preview ? "會新增健康紀錄" : "新增健康紀錄"}
+              </p>
               <p className="mt-1 text-2xl font-semibold text-ink">
-                {result.skippedDuplicateRecordCount}
+                {job.result.preview
+                  ? job.result.preview.newRecordCount
+                  : job.result.importedRecordCount}
               </p>
             </div>
             <div className="rounded-2xl bg-white/80 p-4">
-              <p className="text-sm text-slate-500">新增運動紀錄</p>
-              <p className="mt-1 text-2xl font-semibold text-ink">{result.importedWorkoutCount}</p>
+              <p className="text-sm text-slate-500">
+                {job.result.preview ? "會略過重複健康紀錄" : "略過重複健康紀錄"}
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-ink">
+                {job.result.preview
+                  ? job.result.preview.duplicateRecordCount
+                  : job.result.skippedDuplicateRecordCount}
+              </p>
             </div>
             <div className="rounded-2xl bg-white/80 p-4">
-              <p className="text-sm text-slate-500">略過重複運動紀錄</p>
+              <p className="text-sm text-slate-500">
+                {job.result.preview ? "會新增運動紀錄" : "新增運動紀錄"}
+              </p>
               <p className="mt-1 text-2xl font-semibold text-ink">
-                {result.skippedDuplicateWorkoutCount}
+                {job.result.preview
+                  ? job.result.preview.newWorkoutCount
+                  : job.result.importedWorkoutCount}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white/80 p-4">
+              <p className="text-sm text-slate-500">
+                {job.result.preview ? "會略過重複運動紀錄" : "略過重複運動紀錄"}
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-ink">
+                {job.result.preview
+                  ? job.result.preview.duplicateWorkoutCount
+                  : job.result.skippedDuplicateWorkoutCount}
               </p>
             </div>
           </div>
-          {result.source ? (
+          {job.result.source ? (
             <div className="mt-4 rounded-2xl bg-white/80 p-4 text-sm text-slate-600">
-              <p>來源 zip：{result.source.zipPath}</p>
-              {result.source.sinceDate ? (
-                <p className="mt-1">同步範圍：{formatChineseDate(result.source.sinceDate)} 之後</p>
+              <p>來源 zip：{job.result.source.zipPath}</p>
+              {job.result.source.sinceDate ? (
+                <p className="mt-1">同步範圍：{formatChineseDate(job.result.source.sinceDate)} 之後</p>
               ) : null}
+            </div>
+          ) : null}
+          {!job.result.preview ? (
+            <div className="mt-4 flex flex-wrap gap-3">
+              <ActionButton variant="secondary" onClick={onRefreshPage}>
+                重新讀取頁面資料
+              </ActionButton>
             </div>
           ) : null}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function AppleHealthQuickGuide() {
+  return (
+    <div className="rounded-[24px] border border-slate-200 bg-white/80 p-5">
+      <p className="text-base font-semibold text-ink">操作方式</p>
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+          <p className="font-semibold text-ink">iCloud Drive 自動同步</p>
+          <p className="mt-2">
+            把 <code>export.zip</code> 放到
+            <span className="mx-1 rounded-full bg-white px-3 py-1 text-xs text-slate-600">
+              iCloud Drive/Apple Health/
+            </span>
+            ，先按預覽，再按正式匯入。
+          </p>
+        </div>
+        <div className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+          <p className="font-semibold text-ink">手動上傳 export.xml</p>
+          <p className="mt-2">
+            如果你想自己選檔，先上傳 <code>export.xml</code>，再按預覽或匯入。
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -501,8 +605,7 @@ export function ProfileManagementPanel({ member, growth }) {
   const [isSaving, setIsSaving] = useState(false);
   const [appleHealthFile, setAppleHealthFile] = useState(null);
   const [appleHealthPreview, setAppleHealthPreview] = useState(null);
-  const [appleHealthStatus, setAppleHealthStatus] = useState(null);
-  const [appleHealthImportResult, setAppleHealthImportResult] = useState(null);
+  const [appleHealthJob, setAppleHealthJob] = useState(null);
 
   const [profileForm, setProfileForm] = useState({
     name: member.name,
@@ -542,7 +645,6 @@ export function ProfileManagementPanel({ member, growth }) {
       setMessage(successMessage);
       router.refresh();
     } catch (actionError) {
-      setAppleHealthStatus(null);
       setError(actionError.message);
     } finally {
       setIsSaving(false);
@@ -557,6 +659,167 @@ export function ProfileManagementPanel({ member, growth }) {
       notes: "",
       performedAt: toDateTimeLocalValue(new Date().toISOString())
     });
+  }
+
+  function startAppleHealthJob(kind, title, description) {
+    setMessage("");
+    setError("");
+    setAppleHealthJob({
+      kind,
+      phase: "running",
+      title,
+      description,
+      result: null,
+      error: ""
+    });
+  }
+
+  function finishAppleHealthJob(kind, title, description, result) {
+    setAppleHealthJob({
+      kind,
+      phase: "done",
+      title,
+      description,
+      result,
+      error: ""
+    });
+  }
+
+  function failAppleHealthJob(kind, title, description, errorMessage) {
+    setAppleHealthJob({
+      kind,
+      phase: "error",
+      title,
+      description,
+      result: null,
+      error: errorMessage
+    });
+  }
+
+  async function handleAppleHealthPreviewLatest() {
+    setAppleHealthPreview(null);
+    startAppleHealthJob(
+      "preview-latest",
+      "正在讀取 iCloud Drive 最新匯出",
+      "系統正在尋找最新 zip、解壓 export.xml，並分析最近 30 日資料。"
+    );
+
+    try {
+      const preview = await previewLatestAppleHealthImport(member.id);
+      setAppleHealthPreview(preview);
+      finishAppleHealthJob(
+        "preview-latest",
+        "iCloud Drive 預覽完成",
+        "已完成分析，你可以先看數量，再決定要不要正式匯入。",
+        preview
+      );
+    } catch (jobError) {
+      failAppleHealthJob(
+        "preview-latest",
+        "iCloud Drive 預覽失敗",
+        "系統未能完成最新 zip 預覽。",
+        jobError.message
+      );
+    }
+  }
+
+  async function handleAppleHealthImportLatest() {
+    setAppleHealthPreview(null);
+    startAppleHealthJob(
+      "import-latest",
+      "正在自動匯入最新 zip",
+      "系統正在尋找最新 zip、過濾重複資料，然後把最近 30 日資料寫入 PostgreSQL。"
+    );
+
+    try {
+      const result = await importLatestAppleHealth(member.id);
+      finishAppleHealthJob(
+        "import-latest",
+        "自動匯入完成",
+        "Apple Health 最新 zip 已導入完成。確認結果後，再手動刷新頁面資料。",
+        result
+      );
+    } catch (jobError) {
+      failAppleHealthJob(
+        "import-latest",
+        "自動匯入失敗",
+        "系統未能完成最新 zip 匯入。",
+        jobError.message
+      );
+    }
+  }
+
+  async function handleAppleHealthPreviewFile() {
+    if (!appleHealthFile) {
+      failAppleHealthJob(
+        "preview-file",
+        "尚未選擇檔案",
+        "請先選擇 export.xml，再開始預覽。",
+        "請先選擇 Apple Health 匯出檔"
+      );
+      return;
+    }
+
+    setAppleHealthPreview(null);
+    startAppleHealthJob(
+      "preview-file",
+      "正在分析上傳檔案",
+      "系統正在讀取你上傳的 export.xml，並生成預覽摘要。"
+    );
+
+    try {
+      const preview = await previewAppleHealthImport(member.id, appleHealthFile);
+      setAppleHealthPreview(preview);
+      finishAppleHealthJob(
+        "preview-file",
+        "手動檔案預覽完成",
+        "已完成分析，你可以先看摘要，再決定是否正式匯入。",
+        preview
+      );
+    } catch (jobError) {
+      failAppleHealthJob(
+        "preview-file",
+        "手動檔案預覽失敗",
+        "系統未能完成上傳檔案預覽。",
+        jobError.message
+      );
+    }
+  }
+
+  async function handleAppleHealthImportFile() {
+    if (!appleHealthFile) {
+      failAppleHealthJob(
+        "import-file",
+        "尚未選擇檔案",
+        "請先選擇 export.xml，再開始匯入。",
+        "請先選擇 Apple Health 匯出檔"
+      );
+      return;
+    }
+
+    setAppleHealthPreview(null);
+    startAppleHealthJob(
+      "import-file",
+      "正在匯入上傳檔案",
+      "系統正在解析你上傳的 Apple Health 檔案，並寫入 PostgreSQL。"
+    );
+
+    try {
+      const result = await importAppleHealth(member.id, appleHealthFile);
+      finishAppleHealthJob(
+        "import-file",
+        "手動檔案匯入完成",
+        "Apple Health 檔案已導入完成。確認結果後，再手動刷新頁面資料。",
+        result
+      );
+    } catch (jobError) {
+      failAppleHealthJob(
+        "import-file",
+        "手動檔案匯入失敗",
+        "系統未能完成上傳檔案匯入。",
+        jobError.message
+      );
+    }
   }
 
   function renderProfileTab() {
@@ -977,58 +1240,46 @@ export function ProfileManagementPanel({ member, growth }) {
   }
 
   function renderAppleHealthTab() {
+    const isAppleHealthBusy = appleHealthJob?.phase === "running";
+
     return (
       <div className="space-y-5">
+        <AppleHealthQuickGuide />
+
         <SectionCard
           title="Apple Health 自動匯入"
-          description="如果你每次都把 export.zip 放到 iCloud Drive 的 Apple Health 資料夾，這裡可以直接自動找最新檔案。"
+          description="建議先看預覽，再正式匯入。每一步都會顯示明確狀態。"
         >
-          <div className="flex flex-col gap-3 md:flex-row">
-            <SubmitButton
-              type="button"
-              disabled={isSaving}
-              className="md:w-fit"
-              onClick={() =>
-                runAction(async () => {
-                  setAppleHealthStatus({
-                    title: "正在讀取最新匯出",
-                    description: "系統正從 iCloud Drive 找最新 zip，解壓並分析最近 30 日資料。"
-                  });
-                  setAppleHealthImportResult(null);
-                  const preview = await previewLatestAppleHealthImport(member.id);
-                  setAppleHealthPreview(preview);
-                  setAppleHealthStatus(null);
-                }, "已讀取 iCloud Drive 最新匯出預覽")
-              }
-            >
-              {appleHealthStatus ? "正在分析..." : "讀取 iCloud 最新匯出預覽"}
-            </SubmitButton>
-            <SubmitButton
-              type="button"
-              disabled={isSaving}
-              className="md:w-fit"
-              onClick={() =>
-                runAction(
-                  async () => {
-                    setAppleHealthStatus({
-                      title: "正在自動匯入",
-                      description: "系統正在解壓最新 zip、過濾重複資料，並把最近 30 日 Apple Health 資料寫入資料庫。"
-                    });
-                    const result = await importLatestAppleHealth(member.id);
-                    setAppleHealthPreview(null);
-                    setAppleHealthImportResult(result);
-                    setAppleHealthStatus(null);
-                    return result;
-                  },
-                  "已自動從 iCloud Drive 最新 zip 匯入"
-                )
-              }
-            >
-              {appleHealthStatus ? "正在匯入..." : "自動匯入最新 zip"}
-            </SubmitButton>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl bg-slate-50 p-5">
+              <p className="text-base font-semibold text-ink">第 1 步：先做預覽</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                先掃描 iCloud Drive 最新 zip，看看會新增多少資料。
+              </p>
+              <div className="mt-4">
+                <ActionButton disabled={isAppleHealthBusy} onClick={handleAppleHealthPreviewLatest}>
+                  {isAppleHealthBusy && appleHealthJob?.kind === "preview-latest"
+                    ? "正在分析最新 zip..."
+                    : "先做預覽"}
+                </ActionButton>
+              </div>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-5">
+              <p className="text-base font-semibold text-ink">第 2 步：正式匯入</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                確認預覽沒問題之後，再把最近 30 日資料寫入資料庫。
+              </p>
+              <div className="mt-4">
+                <ActionButton disabled={isAppleHealthBusy} onClick={handleAppleHealthImportLatest}>
+                  {isAppleHealthBusy && appleHealthJob?.kind === "import-latest"
+                    ? "正在匯入最新 zip..."
+                    : "開始自動匯入"}
+                </ActionButton>
+              </div>
+            </div>
           </div>
           <p className="mt-4 text-sm leading-6 text-slate-500">
-            預設會讀取
+            系統會自動讀取
             <span className="mx-1 rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
               iCloud Drive/Apple Health/
             </span>
@@ -1036,11 +1287,9 @@ export function ProfileManagementPanel({ member, growth }) {
           </p>
         </SectionCard>
 
-        <AppleHealthImportStatus status={appleHealthStatus} result={appleHealthImportResult} />
-
         <SectionCard
           title="手動上傳 Apple Health 匯出檔"
-          description="如果你想自己挑選檔案，也可以上傳 export.xml。"
+          description="如果你想自己選檔，也建議先預覽再匯入。"
         >
           <div className="space-y-4">
             <FieldLabel label="選擇 export.xml">
@@ -1050,53 +1299,27 @@ export function ProfileManagementPanel({ member, growth }) {
                 className={baseInputClass}
                 onChange={(event) => {
                   setAppleHealthPreview(null);
+                  setAppleHealthJob(null);
                   setAppleHealthFile(event.target.files?.[0] || null);
                 }}
               />
             </FieldLabel>
             <div className="flex flex-col gap-3 md:flex-row">
-              <SubmitButton
-                type="button"
-                disabled={!appleHealthFile || isSaving}
-                className="md:w-fit"
-                onClick={() =>
-                  runAction(async () => {
-                    setAppleHealthStatus({
-                      title: "正在分析上傳檔案",
-                      description: "系統正在讀取你選擇的 export.xml，並生成匯入預覽。"
-                    });
-                    setAppleHealthImportResult(null);
-                    const preview = await previewAppleHealthImport(member.id, appleHealthFile);
-                    setAppleHealthPreview(preview);
-                    setAppleHealthStatus(null);
-                  }, "已生成匯入預覽")
-                }
-              >
-                {appleHealthStatus ? "正在分析..." : "先看預覽"}
-              </SubmitButton>
-              <SubmitButton
-                type="button"
-                disabled={!appleHealthFile || isSaving}
-                className="md:w-fit"
-                onClick={() =>
-                  runAction(async () => {
-                    setAppleHealthStatus({
-                      title: "正在匯入上傳檔案",
-                      description: "系統正在解析你選擇的 Apple Health 匯出檔，並寫入資料庫。"
-                    });
-                    const result = await importAppleHealth(member.id, appleHealthFile);
-                    setAppleHealthPreview(null);
-                    setAppleHealthImportResult(result);
-                    setAppleHealthStatus(null);
-                    return result;
-                  }, "Apple Health 已匯入")
-                }
-              >
-                {appleHealthStatus ? "正在匯入..." : "開始匯入"}
-              </SubmitButton>
+              <ActionButton disabled={!appleHealthFile || isAppleHealthBusy} onClick={handleAppleHealthPreviewFile}>
+                {isAppleHealthBusy && appleHealthJob?.kind === "preview-file"
+                  ? "正在分析上傳檔案..."
+                  : "先看預覽"}
+              </ActionButton>
+              <ActionButton disabled={!appleHealthFile || isAppleHealthBusy} onClick={handleAppleHealthImportFile}>
+                {isAppleHealthBusy && appleHealthJob?.kind === "import-file"
+                  ? "正在匯入上傳檔案..."
+                  : "開始匯入"}
+              </ActionButton>
             </div>
           </div>
         </SectionCard>
+
+        <AppleHealthWorkflowCard job={appleHealthJob} onRefreshPage={() => router.refresh()} />
 
         <AppleHealthPreview preview={appleHealthPreview} />
       </div>
