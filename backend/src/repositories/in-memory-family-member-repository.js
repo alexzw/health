@@ -84,23 +84,52 @@ export class InMemoryFamilyMemberRepository {
     return member?.exerciseLogs || [];
   }
 
-  async findMetricTrendByMemberId(id, category, limit = 12) {
+  async findMetricTrendByMemberId(id, category, days = 30) {
     const member = seededFamilyMembers.find((entry) => entry.id === id);
 
     if (!member) {
       return [];
     }
 
-    return [...member.healthDataRecords]
-      .filter((entry) => entry.category === category && entry.value !== null && entry.value !== undefined)
-      .sort((left, right) => new Date(right.recordedAt) - new Date(left.recordedAt))
-      .slice(0, limit)
-      .map((entry) => ({
-        value: Number(entry.value),
-        date: entry.recordedAt,
-        unit: entry.unit
-      }))
-      .reverse();
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const grouped = new Map();
+
+    for (const entry of member.healthDataRecords) {
+      if (entry.category !== category || entry.value === null || entry.value === undefined) {
+        continue;
+      }
+
+      const timestamp = new Date(entry.recordedAt).getTime();
+
+      if (timestamp < cutoff) {
+        continue;
+      }
+
+      const dayKey = new Date(entry.recordedAt).toISOString().slice(0, 10);
+      const current = grouped.get(dayKey) || {
+        values: [],
+        unit: entry.unit,
+        date: `${dayKey}T00:00:00.000Z`
+      };
+
+      current.values.push(Number(entry.value));
+      grouped.set(dayKey, current);
+    }
+
+    return [...grouped.values()]
+      .sort((left, right) => new Date(left.date) - new Date(right.date))
+      .map((entry) => {
+        const reducer =
+          category === "steps" || category === "sleep" || category === "active_energy_burned"
+            ? entry.values.reduce((sum, value) => sum + value, 0)
+            : entry.values.reduce((sum, value) => sum + value, 0) / entry.values.length;
+
+        return {
+          value: Math.round(reducer * 10) / 10,
+          date: entry.date,
+          unit: entry.unit
+        };
+      });
   }
 
   async updateMember(id, updates) {

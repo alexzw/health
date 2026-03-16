@@ -110,10 +110,34 @@ export function buildHealthDashboardSummary(member) {
   return {
     cards: {
       latestWeight: member.latestMetrics?.weight || null,
-      latestSteps: member.latestMetrics?.steps || null,
-      latestSleep: member.latestMetrics?.sleep || null,
-      latestRestingHeartRate: member.latestMetrics?.resting_heart_rate || null,
-      latestHeartRate: member.latestMetrics?.heart_rate || null,
+      latestSteps: metricTrends.steps?.[metricTrends.steps.length - 1]
+        ? {
+            value: metricTrends.steps[metricTrends.steps.length - 1].value,
+            unit: metricTrends.steps[metricTrends.steps.length - 1].unit,
+            recordedAt: metricTrends.steps[metricTrends.steps.length - 1].date
+          }
+        : null,
+      latestSleep: metricTrends.sleep?.[metricTrends.sleep.length - 1]
+        ? {
+            value: metricTrends.sleep[metricTrends.sleep.length - 1].value,
+            unit: metricTrends.sleep[metricTrends.sleep.length - 1].unit,
+            recordedAt: metricTrends.sleep[metricTrends.sleep.length - 1].date
+          }
+        : null,
+      latestRestingHeartRate: metricTrends.resting_heart_rate?.[metricTrends.resting_heart_rate.length - 1]
+        ? {
+            value: metricTrends.resting_heart_rate[metricTrends.resting_heart_rate.length - 1].value,
+            unit: metricTrends.resting_heart_rate[metricTrends.resting_heart_rate.length - 1].unit,
+            recordedAt: metricTrends.resting_heart_rate[metricTrends.resting_heart_rate.length - 1].date
+          }
+        : member.latestMetrics?.resting_heart_rate || null,
+      latestHeartRate: metricTrends.heart_rate?.[metricTrends.heart_rate.length - 1]
+        ? {
+            value: metricTrends.heart_rate[metricTrends.heart_rate.length - 1].value,
+            unit: metricTrends.heart_rate[metricTrends.heart_rate.length - 1].unit,
+            recordedAt: metricTrends.heart_rate[metricTrends.heart_rate.length - 1].date
+          }
+        : member.latestMetrics?.heart_rate || null,
       bmi: member.latestBmi || null
     },
     trends: {

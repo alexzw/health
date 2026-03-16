@@ -24,7 +24,9 @@ export function MetricHistoryChart({ items, color, label, unit }) {
   if (!items.length) {
     return (
       <div className="glass-panel rounded-[28px] p-6 shadow-glass">
-        <p className="text-sm text-slate-500">暫時沒有足夠的歷史資料可繪製圖表。</p>
+        <p className="text-sm text-slate-500">
+          這個圖表是用來看最近一段時間的變化趨勢；目前這一類資料還不夠，所以暫時未能顯示。
+        </p>
       </div>
     );
   }
@@ -68,4 +70,3 @@ export function MetricHistoryChart({ items, color, label, unit }) {
     </div>
   );
 }
-

@@ -59,7 +59,7 @@ export class FamilyMemberService {
     const trendEntries = await Promise.all(
       trendCategories.map(async (category) => [
         category,
-        await this.repository.findMetricTrendByMemberId(id, category, 14)
+        await this.repository.findMetricTrendByMemberId(id, category, 30)
       ])
     );
 

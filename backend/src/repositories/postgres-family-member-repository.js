@@ -187,20 +187,31 @@ export class PostgresFamilyMemberRepository {
     return mapRowToMember(result.rows[0]);
   }
 
-  async findMetricTrendByMemberId(id, category, limit = 12) {
+  async findMetricTrendByMemberId(id, category, days = 30) {
     const pool = getPool();
+    const aggregateFunction =
+      category === "steps" || category === "sleep" || category === "active_energy_burned"
+        ? "SUM"
+        : "AVG";
     const result = await pool.query(
       `
-        SELECT value, unit, recorded_at
+        SELECT
+          ${aggregateFunction}(value)::numeric AS value,
+          MAX(unit) AS unit,
+          DATE_TRUNC('day', recorded_at) AS recorded_at
         FROM health_records
-        WHERE family_member_id = $1 AND category = $2 AND value IS NOT NULL
-        ORDER BY recorded_at DESC
-        LIMIT $3;
+        WHERE
+          family_member_id = $1
+          AND category = $2
+          AND value IS NOT NULL
+          AND recorded_at >= NOW() - ($3 * INTERVAL '1 day')
+        GROUP BY DATE_TRUNC('day', recorded_at)
+        ORDER BY recorded_at ASC;
       `,
-      [id, category, limit]
+      [id, category, days]
     );
 
-    return result.rows.map(mapTrendPointRow).reverse();
+    return result.rows.map(mapTrendPointRow);
   }
 
   async findGrowthByMemberId(id) {
