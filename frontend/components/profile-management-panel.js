@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   createExerciseLog,
@@ -51,15 +51,77 @@ function SectionCard({ title, description, children }) {
   );
 }
 
-function SubmitButton({ children, disabled }) {
+function SubmitButton({ children, disabled, className = "" }) {
   return (
     <button
       type="submit"
       disabled={disabled}
-      className="rounded-full bg-blue px-5 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+      className={`rounded-full bg-blue px-5 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
     >
       {children}
     </button>
+  );
+}
+
+function InlineEditList({
+  title,
+  description,
+  items,
+  getKey,
+  getTitle,
+  getSubtitle,
+  initialValues,
+  renderFields,
+  onSave,
+  isSaving,
+  emptyText
+}) {
+  const [drafts, setDrafts] = useState(() =>
+    Object.fromEntries(items.map((item) => [getKey(item), initialValues(item)]))
+  );
+
+  function updateDraft(id, updates) {
+    setDrafts((current) => ({
+      ...current,
+      [id]: {
+        ...current[id],
+        ...updates
+      }
+    }));
+  }
+
+  return (
+    <SectionCard title={title} description={description}>
+      <div className="space-y-4">
+        {items.length ? null : <p className="text-sm text-slate-500">{emptyText}</p>}
+        {items.map((item) => {
+          const id = getKey(item);
+          const draft = drafts[id];
+
+          return (
+            <form
+              key={id}
+              className="rounded-[24px] border border-white/70 bg-white/70 p-4"
+              onSubmit={(event) => {
+                event.preventDefault();
+                onSave(item, draft);
+              }}
+            >
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-base font-semibold text-ink">{getTitle(item)}</p>
+                  <p className="text-sm text-slate-500">{getSubtitle(item)}</p>
+                </div>
+                <SubmitButton disabled={isSaving} className="md:self-start">
+                  保存這一條
+                </SubmitButton>
+              </div>
+              <div className="mt-4">{renderFields(draft, (updates) => updateDraft(id, updates))}</div>
+            </form>
+          );
+        })}
+      </div>
+    </SectionCard>
   );
 }
 
@@ -96,31 +158,10 @@ export function ProfileManagementPanel({ member, growth }) {
     recordedAt: toDateTimeLocalValue(new Date().toISOString())
   });
 
-  const [selectedRecordId, setSelectedRecordId] = useState(member.healthDataRecords[0]?.id || "");
-  const selectedRecord = member.healthDataRecords.find((record) => record.id === selectedRecordId);
-  const [editRecordForm, setEditRecordForm] = useState({
-    category: "",
-    value: "",
-    unit: "",
-    notes: "",
-    recordedAt: ""
-  });
-
   const [newGrowthForm, setNewGrowthForm] = useState({
     heightCm: "",
     weightKg: "",
     measuredAt: toDateTimeLocalValue(new Date().toISOString())
-  });
-  const [selectedMeasurementId, setSelectedMeasurementId] = useState(
-    growth?.measurements?.[growth.measurements.length - 1]?.id || ""
-  );
-  const selectedMeasurement = growth?.measurements?.find(
-    (measurement) => measurement.id === selectedMeasurementId
-  );
-  const [editGrowthForm, setEditGrowthForm] = useState({
-    heightCm: "",
-    weightKg: "",
-    measuredAt: ""
   });
 
   const [newExerciseForm, setNewExerciseForm] = useState({
@@ -130,69 +171,11 @@ export function ProfileManagementPanel({ member, growth }) {
     notes: "",
     performedAt: toDateTimeLocalValue(new Date().toISOString())
   });
-  const [selectedExerciseLogId, setSelectedExerciseLogId] = useState(member.exerciseLogs?.[0]?.id || "");
-  const selectedExerciseLog = member.exerciseLogs?.find((log) => log.id === selectedExerciseLogId);
-  const [editExerciseForm, setEditExerciseForm] = useState({
-    workoutType: "",
-    durationMinutes: "",
-    caloriesBurned: "",
-    notes: "",
-    performedAt: ""
-  });
-
-  useEffect(() => {
-    if (!selectedRecord) {
-      setEditRecordForm({ category: "", value: "", unit: "", notes: "", recordedAt: "" });
-      return;
-    }
-
-    setEditRecordForm({
-      category: selectedRecord.category,
-      value: selectedRecord.value === null ? "" : String(selectedRecord.value),
-      unit: selectedRecord.unit || "",
-      notes: selectedRecord.notes || "",
-      recordedAt: toDateTimeLocalValue(selectedRecord.recordedAt)
-    });
-  }, [selectedRecord]);
-
-  useEffect(() => {
-    if (!selectedMeasurement) {
-      setEditGrowthForm({ heightCm: "", weightKg: "", measuredAt: "" });
-      return;
-    }
-
-    setEditGrowthForm({
-      heightCm: String(selectedMeasurement.heightCm ?? ""),
-      weightKg: String(selectedMeasurement.weightKg ?? ""),
-      measuredAt: toDateTimeLocalValue(selectedMeasurement.measuredAt)
-    });
-  }, [selectedMeasurement]);
-
-  useEffect(() => {
-    if (!selectedExerciseLog) {
-      setEditExerciseForm({
-        workoutType: "",
-        durationMinutes: "",
-        caloriesBurned: "",
-        notes: "",
-        performedAt: ""
-      });
-      return;
-    }
-
-    setEditExerciseForm({
-      workoutType: selectedExerciseLog.workoutType,
-      durationMinutes: String(selectedExerciseLog.durationMinutes ?? ""),
-      caloriesBurned: String(selectedExerciseLog.caloriesBurned ?? ""),
-      notes: selectedExerciseLog.notes || "",
-      performedAt: toDateTimeLocalValue(selectedExerciseLog.performedAt)
-    });
-  }, [selectedExerciseLog]);
 
   async function runAction(action, successMessage) {
     setIsSaving(true);
-    setError("");
     setMessage("");
+    setError("");
 
     try {
       await action();
@@ -251,10 +234,10 @@ export function ProfileManagementPanel({ member, growth }) {
 
   function renderRecordTab() {
     return (
-      <div className="grid gap-5 xl:grid-cols-2">
-        <SectionCard title="新增健康紀錄" description="手動加入體重、心率、睡眠等資料。">
+      <div className="space-y-5">
+        <SectionCard title="新增健康紀錄" description="先新增，再直接在下方逐條快速編輯。">
           <form
-            className="space-y-4"
+            className="grid gap-4 md:grid-cols-2"
             onSubmit={(event) => {
               event.preventDefault();
               runAction(
@@ -270,33 +253,30 @@ export function ProfileManagementPanel({ member, growth }) {
             <FieldLabel label="類型">
               <input
                 className={baseInputClass}
-                placeholder="例如：weight、sleep、resting_heart_rate"
                 value={newRecordForm.category}
                 onChange={(event) =>
                   setNewRecordForm((current) => ({ ...current, category: event.target.value }))
                 }
               />
             </FieldLabel>
-            <div className="grid gap-4 md:grid-cols-2">
-              <FieldLabel label="數值">
-                <input
-                  className={baseInputClass}
-                  value={newRecordForm.value}
-                  onChange={(event) =>
-                    setNewRecordForm((current) => ({ ...current, value: event.target.value }))
-                  }
-                />
-              </FieldLabel>
-              <FieldLabel label="單位">
-                <input
-                  className={baseInputClass}
-                  value={newRecordForm.unit}
-                  onChange={(event) =>
-                    setNewRecordForm((current) => ({ ...current, unit: event.target.value }))
-                  }
-                />
-              </FieldLabel>
-            </div>
+            <FieldLabel label="數值">
+              <input
+                className={baseInputClass}
+                value={newRecordForm.value}
+                onChange={(event) =>
+                  setNewRecordForm((current) => ({ ...current, value: event.target.value }))
+                }
+              />
+            </FieldLabel>
+            <FieldLabel label="單位">
+              <input
+                className={baseInputClass}
+                value={newRecordForm.unit}
+                onChange={(event) =>
+                  setNewRecordForm((current) => ({ ...current, unit: event.target.value }))
+                }
+              />
+            </FieldLabel>
             <FieldLabel label="記錄時間">
               <input
                 type="datetime-local"
@@ -307,108 +287,110 @@ export function ProfileManagementPanel({ member, growth }) {
                 }
               />
             </FieldLabel>
-            <FieldLabel label="備註">
-              <textarea
-                className={`${baseInputClass} min-h-28 resize-y`}
-                value={newRecordForm.notes}
-                onChange={(event) =>
-                  setNewRecordForm((current) => ({ ...current, notes: event.target.value }))
-                }
-              />
-            </FieldLabel>
-            <SubmitButton disabled={isSaving}>新增健康紀錄</SubmitButton>
+            <div className="md:col-span-2">
+              <FieldLabel label="備註">
+                <textarea
+                  className={`${baseInputClass} min-h-24 resize-y`}
+                  value={newRecordForm.notes}
+                  onChange={(event) =>
+                    setNewRecordForm((current) => ({ ...current, notes: event.target.value }))
+                  }
+                />
+              </FieldLabel>
+            </div>
+            <div className="md:col-span-2">
+              <SubmitButton disabled={isSaving}>新增健康紀錄</SubmitButton>
+            </div>
           </form>
         </SectionCard>
 
-        <SectionCard title="修改既有健康紀錄" description="選一筆現有紀錄再更新內容。">
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              runAction(
-                () =>
-                  updateHealthRecord(member.id, selectedRecordId, {
-                    ...editRecordForm,
-                    recordedAt: new Date(editRecordForm.recordedAt).toISOString()
-                  }),
-                "健康紀錄已更新"
-              );
-            }}
-          >
-            <FieldLabel label="選擇紀錄">
-              <select
-                className={baseInputClass}
-                value={selectedRecordId}
-                onChange={(event) => setSelectedRecordId(event.target.value)}
-              >
-                {member.healthDataRecords.map((record) => (
-                  <option key={record.id} value={record.id}>
-                    {record.category} / {new Date(record.recordedAt).toLocaleDateString("zh-HK")}
-                  </option>
-                ))}
-              </select>
-            </FieldLabel>
-            <FieldLabel label="類型">
-              <input
-                className={baseInputClass}
-                value={editRecordForm.category}
-                onChange={(event) =>
-                  setEditRecordForm((current) => ({ ...current, category: event.target.value }))
-                }
-              />
-            </FieldLabel>
+        <InlineEditList
+          title="快速修改健康紀錄"
+          description="每一條紀錄都可以直接改，不用先選。"
+          items={member.healthDataRecords || []}
+          getKey={(item) => item.id}
+          getTitle={(item) => item.category}
+          getSubtitle={(item) =>
+            new Date(item.recordedAt).toLocaleString("zh-HK", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit"
+            })
+          }
+          initialValues={(item) => ({
+            category: item.category,
+            value: item.value === null ? "" : String(item.value),
+            unit: item.unit || "",
+            notes: item.notes || "",
+            recordedAt: toDateTimeLocalValue(item.recordedAt)
+          })}
+          renderFields={(draft, updateDraft) => (
             <div className="grid gap-4 md:grid-cols-2">
+              <FieldLabel label="類型">
+                <input
+                  className={baseInputClass}
+                  value={draft.category}
+                  onChange={(event) => updateDraft({ category: event.target.value })}
+                />
+              </FieldLabel>
               <FieldLabel label="數值">
                 <input
                   className={baseInputClass}
-                  value={editRecordForm.value}
-                  onChange={(event) =>
-                    setEditRecordForm((current) => ({ ...current, value: event.target.value }))
-                  }
+                  value={draft.value}
+                  onChange={(event) => updateDraft({ value: event.target.value })}
                 />
               </FieldLabel>
               <FieldLabel label="單位">
                 <input
                   className={baseInputClass}
-                  value={editRecordForm.unit}
-                  onChange={(event) =>
-                    setEditRecordForm((current) => ({ ...current, unit: event.target.value }))
-                  }
+                  value={draft.unit}
+                  onChange={(event) => updateDraft({ unit: event.target.value })}
                 />
               </FieldLabel>
+              <FieldLabel label="記錄時間">
+                <input
+                  type="datetime-local"
+                  className={baseInputClass}
+                  value={draft.recordedAt}
+                  onChange={(event) => updateDraft({ recordedAt: event.target.value })}
+                />
+              </FieldLabel>
+              <div className="md:col-span-2">
+                <FieldLabel label="備註">
+                  <textarea
+                    className={`${baseInputClass} min-h-24 resize-y`}
+                    value={draft.notes}
+                    onChange={(event) => updateDraft({ notes: event.target.value })}
+                  />
+                </FieldLabel>
+              </div>
             </div>
-            <FieldLabel label="記錄時間">
-              <input
-                type="datetime-local"
-                className={baseInputClass}
-                value={editRecordForm.recordedAt}
-                onChange={(event) =>
-                  setEditRecordForm((current) => ({ ...current, recordedAt: event.target.value }))
-                }
-              />
-            </FieldLabel>
-            <FieldLabel label="備註">
-              <textarea
-                className={`${baseInputClass} min-h-28 resize-y`}
-                value={editRecordForm.notes}
-                onChange={(event) =>
-                  setEditRecordForm((current) => ({ ...current, notes: event.target.value }))
-                }
-              />
-            </FieldLabel>
-            <SubmitButton disabled={isSaving || !member.healthDataRecords.length}>更新健康紀錄</SubmitButton>
-          </form>
-        </SectionCard>
+          )}
+          onSave={(item, draft) =>
+            runAction(
+              () =>
+                updateHealthRecord(member.id, item.id, {
+                  ...draft,
+                  recordedAt: new Date(draft.recordedAt).toISOString()
+                }),
+              "健康紀錄已更新"
+            )
+          }
+          isSaving={isSaving}
+          emptyText="暫時沒有健康紀錄。"
+        />
       </div>
     );
   }
 
   function renderGrowthTab() {
     return (
-      <div className="grid gap-5 xl:grid-cols-2">
-        <SectionCard title="新增成長測量" description="為 Ryan 新增最新身高和體重。">
+      <div className="space-y-5">
+        <SectionCard title="新增成長測量" description="新增完之後，下方每條可以直接編輯。">
           <form
-            className="space-y-4"
+            className="grid gap-4 md:grid-cols-2"
             onSubmit={(event) => {
               event.preventDefault();
               runAction(
@@ -449,80 +431,73 @@ export function ProfileManagementPanel({ member, growth }) {
                 }
               />
             </FieldLabel>
-            <SubmitButton disabled={isSaving}>新增成長數據</SubmitButton>
+            <div className="md:col-span-2">
+              <SubmitButton disabled={isSaving}>新增成長數據</SubmitButton>
+            </div>
           </form>
         </SectionCard>
 
-        <SectionCard title="修改既有成長測量" description="選擇一筆歷史成長數據作更新。">
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              runAction(
-                () =>
-                  updateGrowthMeasurement(member.id, selectedMeasurementId, {
-                    ...editGrowthForm,
-                    measuredAt: new Date(editGrowthForm.measuredAt).toISOString()
-                  }),
-                "成長數據已更新"
-              );
-            }}
-          >
-            <FieldLabel label="選擇測量">
-              <select
-                className={baseInputClass}
-                value={selectedMeasurementId}
-                onChange={(event) => setSelectedMeasurementId(event.target.value)}
-              >
-                {growth?.measurements?.map((entry) => (
-                  <option key={entry.id} value={entry.id}>
-                    {new Date(entry.measuredAt).toLocaleDateString("zh-HK")} / {entry.heightCm} cm /{" "}
-                    {entry.weightKg} kg
-                  </option>
-                ))}
-              </select>
-            </FieldLabel>
-            <FieldLabel label="身高（cm）">
-              <input
-                className={baseInputClass}
-                value={editGrowthForm.heightCm}
-                onChange={(event) =>
-                  setEditGrowthForm((current) => ({ ...current, heightCm: event.target.value }))
-                }
-              />
-            </FieldLabel>
-            <FieldLabel label="體重（kg）">
-              <input
-                className={baseInputClass}
-                value={editGrowthForm.weightKg}
-                onChange={(event) =>
-                  setEditGrowthForm((current) => ({ ...current, weightKg: event.target.value }))
-                }
-              />
-            </FieldLabel>
-            <FieldLabel label="測量時間">
-              <input
-                type="datetime-local"
-                className={baseInputClass}
-                value={editGrowthForm.measuredAt}
-                onChange={(event) =>
-                  setEditGrowthForm((current) => ({ ...current, measuredAt: event.target.value }))
-                }
-              />
-            </FieldLabel>
-            <SubmitButton disabled={isSaving || !growth?.measurements?.length}>更新成長數據</SubmitButton>
-          </form>
-        </SectionCard>
+        <InlineEditList
+          title="快速修改成長數據"
+          description="直接在每條測量上修改，不用再下拉選擇。"
+          items={growth?.measurements || []}
+          getKey={(item) => item.id}
+          getTitle={(item) => `${item.heightCm} cm / ${item.weightKg} kg`}
+          getSubtitle={(item) => new Date(item.measuredAt).toLocaleDateString("zh-HK")}
+          initialValues={(item) => ({
+            heightCm: String(item.heightCm ?? ""),
+            weightKg: String(item.weightKg ?? ""),
+            measuredAt: toDateTimeLocalValue(item.measuredAt)
+          })}
+          renderFields={(draft, updateDraft) => (
+            <div className="grid gap-4 md:grid-cols-2">
+              <FieldLabel label="身高（cm）">
+                <input
+                  className={baseInputClass}
+                  value={draft.heightCm}
+                  onChange={(event) => updateDraft({ heightCm: event.target.value })}
+                />
+              </FieldLabel>
+              <FieldLabel label="體重（kg）">
+                <input
+                  className={baseInputClass}
+                  value={draft.weightKg}
+                  onChange={(event) => updateDraft({ weightKg: event.target.value })}
+                />
+              </FieldLabel>
+              <FieldLabel label="測量時間">
+                <input
+                  type="datetime-local"
+                  className={baseInputClass}
+                  value={draft.measuredAt}
+                  onChange={(event) => updateDraft({ measuredAt: event.target.value })}
+                />
+              </FieldLabel>
+            </div>
+          )}
+          onSave={(item, draft) =>
+            runAction(
+              () =>
+                updateGrowthMeasurement(member.id, item.id, {
+                  ...draft,
+                  measuredAt: new Date(draft.measuredAt).toISOString()
+                }),
+              "成長數據已更新"
+            )
+          }
+          isSaving={isSaving}
+          emptyText="暫時沒有成長數據。"
+        />
       </div>
     );
   }
 
   function renderExerciseTab() {
     return (
-      <div className="grid gap-5 xl:grid-cols-2">
-        <SectionCard title="新增運動紀錄" description="記錄 gym、running、cardio、strength training 等活動。">
+      <div className="space-y-5">
+        <SectionCard title="新增運動紀錄" description="新增完之後，下方每條可以直接改。">
           <form
-            className="space-y-4"
+            className="grid gap-4 md:grid-cols-2"
             onSubmit={(event) => {
               event.preventDefault();
               runAction(
@@ -544,32 +519,30 @@ export function ProfileManagementPanel({ member, growth }) {
                 }
               />
             </FieldLabel>
-            <div className="grid gap-4 md:grid-cols-2">
-              <FieldLabel label="時長（分鐘）">
-                <input
-                  className={baseInputClass}
-                  value={newExerciseForm.durationMinutes}
-                  onChange={(event) =>
-                    setNewExerciseForm((current) => ({
-                      ...current,
-                      durationMinutes: event.target.value
-                    }))
-                  }
-                />
-              </FieldLabel>
-              <FieldLabel label="卡路里">
-                <input
-                  className={baseInputClass}
-                  value={newExerciseForm.caloriesBurned}
-                  onChange={(event) =>
-                    setNewExerciseForm((current) => ({
-                      ...current,
-                      caloriesBurned: event.target.value
-                    }))
-                  }
-                />
-              </FieldLabel>
-            </div>
+            <FieldLabel label="時長（分鐘）">
+              <input
+                className={baseInputClass}
+                value={newExerciseForm.durationMinutes}
+                onChange={(event) =>
+                  setNewExerciseForm((current) => ({
+                    ...current,
+                    durationMinutes: event.target.value
+                  }))
+                }
+              />
+            </FieldLabel>
+            <FieldLabel label="卡路里">
+              <input
+                className={baseInputClass}
+                value={newExerciseForm.caloriesBurned}
+                onChange={(event) =>
+                  setNewExerciseForm((current) => ({
+                    ...current,
+                    caloriesBurned: event.target.value
+                  }))
+                }
+              />
+            </FieldLabel>
             <FieldLabel label="運動時間">
               <input
                 type="datetime-local"
@@ -580,104 +553,92 @@ export function ProfileManagementPanel({ member, growth }) {
                 }
               />
             </FieldLabel>
-            <FieldLabel label="備註">
-              <textarea
-                className={`${baseInputClass} min-h-28 resize-y`}
-                value={newExerciseForm.notes}
-                onChange={(event) =>
-                  setNewExerciseForm((current) => ({ ...current, notes: event.target.value }))
-                }
-              />
-            </FieldLabel>
-            <SubmitButton disabled={isSaving}>新增運動紀錄</SubmitButton>
+            <div className="md:col-span-2">
+              <FieldLabel label="備註">
+                <textarea
+                  className={`${baseInputClass} min-h-24 resize-y`}
+                  value={newExerciseForm.notes}
+                  onChange={(event) =>
+                    setNewExerciseForm((current) => ({ ...current, notes: event.target.value }))
+                  }
+                />
+              </FieldLabel>
+            </div>
+            <div className="md:col-span-2">
+              <SubmitButton disabled={isSaving}>新增運動紀錄</SubmitButton>
+            </div>
           </form>
         </SectionCard>
 
-        <SectionCard title="修改既有運動紀錄" description="更新既有 workout 類型、時長和卡路里。">
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              runAction(
-                () =>
-                  updateExerciseLog(member.id, selectedExerciseLogId, {
-                    ...editExerciseForm,
-                    performedAt: new Date(editExerciseForm.performedAt).toISOString()
-                  }),
-                "運動紀錄已更新"
-              );
-            }}
-          >
-            <FieldLabel label="選擇運動紀錄">
-              <select
-                className={baseInputClass}
-                value={selectedExerciseLogId}
-                onChange={(event) => setSelectedExerciseLogId(event.target.value)}
-              >
-                {member.exerciseLogs?.map((log) => (
-                  <option key={log.id} value={log.id}>
-                    {log.workoutType} / {new Date(log.performedAt).toLocaleDateString("zh-HK")}
-                  </option>
-                ))}
-              </select>
-            </FieldLabel>
-            <FieldLabel label="運動類型">
-              <input
-                className={baseInputClass}
-                value={editExerciseForm.workoutType}
-                onChange={(event) =>
-                  setEditExerciseForm((current) => ({ ...current, workoutType: event.target.value }))
-                }
-              />
-            </FieldLabel>
+        <InlineEditList
+          title="快速修改運動紀錄"
+          description="每條運動紀錄都可以直接改。"
+          items={member.exerciseLogs || []}
+          getKey={(item) => item.id}
+          getTitle={(item) => item.workoutType}
+          getSubtitle={(item) => new Date(item.performedAt).toLocaleString("zh-HK")}
+          initialValues={(item) => ({
+            workoutType: item.workoutType,
+            durationMinutes: String(item.durationMinutes ?? ""),
+            caloriesBurned: String(item.caloriesBurned ?? ""),
+            notes: item.notes || "",
+            performedAt: toDateTimeLocalValue(item.performedAt)
+          })}
+          renderFields={(draft, updateDraft) => (
             <div className="grid gap-4 md:grid-cols-2">
+              <FieldLabel label="運動類型">
+                <input
+                  className={baseInputClass}
+                  value={draft.workoutType}
+                  onChange={(event) => updateDraft({ workoutType: event.target.value })}
+                />
+              </FieldLabel>
               <FieldLabel label="時長（分鐘）">
                 <input
                   className={baseInputClass}
-                  value={editExerciseForm.durationMinutes}
-                  onChange={(event) =>
-                    setEditExerciseForm((current) => ({
-                      ...current,
-                      durationMinutes: event.target.value
-                    }))
-                  }
+                  value={draft.durationMinutes}
+                  onChange={(event) => updateDraft({ durationMinutes: event.target.value })}
                 />
               </FieldLabel>
               <FieldLabel label="卡路里">
                 <input
                   className={baseInputClass}
-                  value={editExerciseForm.caloriesBurned}
-                  onChange={(event) =>
-                    setEditExerciseForm((current) => ({
-                      ...current,
-                      caloriesBurned: event.target.value
-                    }))
-                  }
+                  value={draft.caloriesBurned}
+                  onChange={(event) => updateDraft({ caloriesBurned: event.target.value })}
                 />
               </FieldLabel>
+              <FieldLabel label="運動時間">
+                <input
+                  type="datetime-local"
+                  className={baseInputClass}
+                  value={draft.performedAt}
+                  onChange={(event) => updateDraft({ performedAt: event.target.value })}
+                />
+              </FieldLabel>
+              <div className="md:col-span-2">
+                <FieldLabel label="備註">
+                  <textarea
+                    className={`${baseInputClass} min-h-24 resize-y`}
+                    value={draft.notes}
+                    onChange={(event) => updateDraft({ notes: event.target.value })}
+                  />
+                </FieldLabel>
+              </div>
             </div>
-            <FieldLabel label="運動時間">
-              <input
-                type="datetime-local"
-                className={baseInputClass}
-                value={editExerciseForm.performedAt}
-                onChange={(event) =>
-                  setEditExerciseForm((current) => ({ ...current, performedAt: event.target.value }))
-                }
-              />
-            </FieldLabel>
-            <FieldLabel label="備註">
-              <textarea
-                className={`${baseInputClass} min-h-28 resize-y`}
-                value={editExerciseForm.notes}
-                onChange={(event) =>
-                  setEditExerciseForm((current) => ({ ...current, notes: event.target.value }))
-                }
-              />
-            </FieldLabel>
-            <SubmitButton disabled={isSaving || !member.exerciseLogs?.length}>更新運動紀錄</SubmitButton>
-          </form>
-        </SectionCard>
+          )}
+          onSave={(item, draft) =>
+            runAction(
+              () =>
+                updateExerciseLog(member.id, item.id, {
+                  ...draft,
+                  performedAt: new Date(draft.performedAt).toISOString()
+                }),
+              "運動紀錄已更新"
+            )
+          }
+          isSaving={isSaving}
+          emptyText="暫時沒有運動紀錄。"
+        />
       </div>
     );
   }
@@ -686,7 +647,7 @@ export function ProfileManagementPanel({ member, growth }) {
     return (
       <SectionCard
         title="Apple Health 匯入"
-        description="上傳 iPhone Health app 匯出的 XML 檔案，系統會匯入可識別的體重、步數、心率、睡眠和運動資料。"
+        description="上傳 iPhone Health app 匯出的 XML 檔案。系統會匯入體重、步數、心率、睡眠和運動資料。"
       >
         <form
           className="space-y-4"
@@ -714,6 +675,14 @@ export function ProfileManagementPanel({ member, growth }) {
           </FieldLabel>
           <SubmitButton disabled={isSaving}>開始匯入</SubmitButton>
         </form>
+        <div className="mt-5 rounded-[22px] bg-white/70 p-4 text-sm leading-6 text-slate-600">
+          <p>匯入方式：</p>
+          <p>1. 在 iPhone 打開「健康」App。</p>
+          <p>2. 點右上角個人頭像。</p>
+          <p>3. 向下找到「匯出所有健康資料」。</p>
+          <p>4. 等 iPhone 產生 `export.zip`。</p>
+          <p>5. 解壓後選擇裡面的 `export.xml` 上傳到這裡。</p>
+        </div>
       </SectionCard>
     );
   }
@@ -728,7 +697,7 @@ export function ProfileManagementPanel({ member, growth }) {
               新增與修改資料
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              透過分頁管理不同資料類型，避免頁面內容過度擁擠。
+              改成逐條直接編輯，唔使再先選一條再填表。
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
