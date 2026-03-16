@@ -549,6 +549,16 @@ export function ProfileManagementPanel({ member, growth }) {
     }
   }
 
+  function resetExerciseForm() {
+    setNewExerciseForm({
+      workoutType: "",
+      durationMinutes: "",
+      caloriesBurned: "",
+      notes: "",
+      performedAt: toDateTimeLocalValue(new Date().toISOString())
+    });
+  }
+
   function renderProfileTab() {
     return (
       <SectionCard title="編輯個人資料" description="修改姓名、性別和生日。">
@@ -792,14 +802,17 @@ export function ProfileManagementPanel({ member, growth }) {
         <SectionCard title="新增運動紀錄" description="新增完之後，下方每條可以直接改或刪除。">
           <form
             className="grid gap-4 md:grid-cols-2"
+            autoComplete="off"
             onSubmit={(event) => {
               event.preventDefault();
               runAction(
-                () =>
-                  createExerciseLog(member.id, {
+                async () => {
+                  await createExerciseLog(member.id, {
                     ...newExerciseForm,
                     performedAt: new Date(newExerciseForm.performedAt).toISOString()
-                  }),
+                  });
+                  resetExerciseForm();
+                },
                 "運動紀錄已新增"
               );
             }}
@@ -807,15 +820,29 @@ export function ProfileManagementPanel({ member, growth }) {
             <FieldLabel label="運動類型">
               <input
                 className={baseInputClass}
+                list="workout-type-options"
+                placeholder="例如：跑步、健身、游泳"
                 value={newExerciseForm.workoutType}
                 onChange={(event) =>
                   setNewExerciseForm((current) => ({ ...current, workoutType: event.target.value }))
                 }
               />
+              <datalist id="workout-type-options">
+                <option value="跑步" />
+                <option value="健身" />
+                <option value="力量訓練" />
+                <option value="Cardio" />
+                <option value="快走" />
+                <option value="游泳" />
+              </datalist>
             </FieldLabel>
             <FieldLabel label="時長（分鐘）">
               <input
+                type="number"
+                inputMode="numeric"
+                min="0"
                 className={baseInputClass}
+                placeholder="例如：45"
                 value={newExerciseForm.durationMinutes}
                 onChange={(event) =>
                   setNewExerciseForm((current) => ({
@@ -827,7 +854,11 @@ export function ProfileManagementPanel({ member, growth }) {
             </FieldLabel>
             <FieldLabel label="卡路里">
               <input
+                type="number"
+                inputMode="numeric"
+                min="0"
                 className={baseInputClass}
+                placeholder="例如：320"
                 value={newExerciseForm.caloriesBurned}
                 onChange={(event) =>
                   setNewExerciseForm((current) => ({
@@ -851,6 +882,7 @@ export function ProfileManagementPanel({ member, growth }) {
               <FieldLabel label="備註">
                 <textarea
                   className={`${baseInputClass} min-h-24 resize-y`}
+                  placeholder="例如：跑步機 5 公里，感覺良好"
                   value={newExerciseForm.notes}
                   onChange={(event) =>
                     setNewExerciseForm((current) => ({ ...current, notes: event.target.value }))
@@ -859,6 +891,9 @@ export function ProfileManagementPanel({ member, growth }) {
               </FieldLabel>
             </div>
             <div className="md:col-span-2">
+              <p className="mb-3 text-xs text-slate-500">
+                先填運動類型，再填分鐘和卡路里，送出後會自動清空表單。
+              </p>
               <SubmitButton disabled={isSaving}>新增運動紀錄</SubmitButton>
             </div>
           </form>
