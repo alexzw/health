@@ -5,6 +5,7 @@ import { GrowthChart } from "../../../components/growth-chart";
 import { GrowthInsights } from "../../../components/growth-insights";
 import { HealthRecordTable } from "../../../components/health-record-table";
 import { MetricHistoryChart } from "../../../components/metric-history-chart";
+import { MiniMetricChart } from "../../../components/mini-metric-chart";
 import { ProfileManagementPanel } from "../../../components/profile-management-panel";
 import { calculateBmi } from "../../../lib/bmi";
 import { formatChineseDate } from "../../../lib/format";
@@ -90,6 +91,10 @@ export default async function FamilyMemberDetailPage({ params }) {
   }
 
   const weightHistory = member.metricTrends?.weight || [];
+  const stepsHistory = member.metricTrends?.steps || [];
+  const sleepHistory = member.metricTrends?.sleep || [];
+  const restingHeartRateHistory = member.metricTrends?.resting_heart_rate || [];
+  const heartRateHistory = member.metricTrends?.heart_rate || [];
   const secondaryTrend = pickSecondaryTrend(member.metricTrends);
   const dashboard = member.dashboard || null;
 
@@ -235,6 +240,28 @@ export default async function FamilyMemberDetailPage({ params }) {
                 </p>
               </div>
             )}
+          </div>
+
+          <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.24em] text-slate-500">更多圖表</p>
+                <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">Apple Health Mini Charts</h3>
+              </div>
+              <p className="text-sm text-slate-500">看更多日常變化</p>
+            </div>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <MiniMetricChart items={stepsHistory} color="#34a853" label="步數" unit="steps" compact />
+              <MiniMetricChart items={sleepHistory} color="#5c6ac4" label="睡眠" unit="hours" compact />
+              <MiniMetricChart
+                items={restingHeartRateHistory}
+                color="#ff6b57"
+                label="靜止心率"
+                unit="bpm"
+                compact
+              />
+              <MiniMetricChart items={heartRateHistory} color="#ff8a65" label="心率" unit="bpm" compact />
+            </div>
           </div>
 
           <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MetricHistoryChart } from "../components/metric-history-chart";
+import { MiniMetricChart } from "../components/mini-metric-chart";
 import { formatChineseDate } from "../lib/format";
 import { getFamilyMember, getFamilyMembers, getGrowthTracking } from "../lib/api";
 
@@ -63,6 +64,12 @@ export default async function HomePage() {
   const amelieWeightTrend = amelie?.metricTrends?.weight || [];
   const alexDashboard = alex?.dashboard || null;
   const amelieDashboard = amelie?.dashboard || null;
+  const alexStepsTrend = alex?.metricTrends?.steps || [];
+  const alexSleepTrend = alex?.metricTrends?.sleep || [];
+  const alexRestingHeartRateTrend = alex?.metricTrends?.resting_heart_rate || [];
+  const amelieStepsTrend = amelie?.metricTrends?.steps || [];
+  const amelieSleepTrend = amelie?.metricTrends?.sleep || [];
+  const amelieRestingHeartRateTrend = amelie?.metricTrends?.resting_heart_rate || [];
   const alexSecondaryMetric =
     alexDashboard?.cards?.latestSteps ||
     alexDashboard?.cards?.latestRestingHeartRate ||
@@ -165,6 +172,50 @@ export default async function HomePage() {
           label="Amelie 體重趨勢"
           unit="kg"
         />
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="glass-panel rounded-[32px] p-7 shadow-glass">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Alex Mini Charts</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-ink">更多日常指標</h2>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <MiniMetricChart items={alexStepsTrend} color="#34a853" label="步數" unit="steps" compact />
+            <MiniMetricChart items={alexSleepTrend} color="#5c6ac4" label="睡眠" unit="hours" compact />
+            <MiniMetricChart
+              items={alexRestingHeartRateTrend}
+              color="#ff6b57"
+              label="靜止心率"
+              unit="bpm"
+              compact
+            />
+            <MiniMetricChart items={alexWeightTrend} color="#0071e3" label="體重" unit="kg" compact />
+          </div>
+        </div>
+
+        <div className="glass-panel rounded-[32px] p-7 shadow-glass">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Amelie Mini Charts</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-ink">更多日常指標</h2>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <MiniMetricChart items={amelieStepsTrend} color="#34a853" label="步數" unit="steps" compact />
+            <MiniMetricChart items={amelieSleepTrend} color="#5c6ac4" label="睡眠" unit="hours" compact />
+            <MiniMetricChart
+              items={amelieRestingHeartRateTrend}
+              color="#ff6b57"
+              label="靜止心率"
+              unit="bpm"
+              compact
+            />
+            <MiniMetricChart items={amelieWeightTrend} color="#0071e3" label="體重" unit="kg" compact />
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
