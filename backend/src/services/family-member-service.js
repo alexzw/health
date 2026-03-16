@@ -1,6 +1,7 @@
 import { calculateAge, formatDisplayDate } from "../lib/date.js";
 import { calculateBmi, findLatestMetric } from "../lib/body-metrics.js";
 import { analyzeGrowthMeasurements } from "../lib/growth.js";
+import { buildHealthDashboardSummary } from "../lib/health-dashboard.js";
 import { HttpError } from "../lib/http-error.js";
 
 function presentMember(member) {
@@ -62,10 +63,19 @@ export class FamilyMemberService {
       ])
     );
 
-    return presentMember({
+    const presentedMember = presentMember({
       ...member,
       metricTrends: Object.fromEntries(trendEntries)
     });
+
+    if (presentedMember.familyRole !== "Child") {
+      return {
+        ...presentedMember,
+        dashboard: buildHealthDashboardSummary(presentedMember)
+      };
+    }
+
+    return presentedMember;
   }
 
   async getGrowthTracking(id) {

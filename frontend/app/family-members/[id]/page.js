@@ -37,6 +37,18 @@ function pickSecondaryTrend(metricTrends = {}) {
     .find((entry) => entry.items.length);
 }
 
+function formatDelta(trend) {
+  if (!trend || trend.delta === null || trend.delta === undefined) {
+    return "未有足夠資料";
+  }
+
+  if (trend.delta === 0) {
+    return "與 30 天基準相若";
+  }
+
+  return `${trend.delta > 0 ? "+" : ""}${trend.delta} ${trend.unit}`;
+}
+
 export async function generateMetadata({ params }) {
   const resolvedParams = await params;
 
@@ -79,6 +91,7 @@ export default async function FamilyMemberDetailPage({ params }) {
 
   const weightHistory = member.metricTrends?.weight || [];
   const secondaryTrend = pickSecondaryTrend(member.metricTrends);
+  const dashboard = member.dashboard || null;
 
   return (
     <section className="space-y-8">
@@ -173,13 +186,33 @@ export default async function FamilyMemberDetailPage({ params }) {
             </div>
             <div className="glass-panel rounded-[28px] p-6 shadow-glass">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新體重</p>
-              <p className="mt-2 text-3xl font-semibold text-ink">{formatMetricValue(member.latestMetrics?.weight)}</p>
+              <p className="mt-2 text-3xl font-semibold text-ink">{formatMetricValue(dashboard?.cards?.latestWeight || member.latestMetrics?.weight)}</p>
             </div>
             <div className="glass-panel rounded-[28px] p-6 shadow-glass">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新步數</p>
-              <p className="mt-2 text-3xl font-semibold text-ink">{formatMetricValue(member.latestMetrics?.steps)}</p>
+              <p className="mt-2 text-3xl font-semibold text-ink">{formatMetricValue(dashboard?.cards?.latestSteps || member.latestMetrics?.steps)}</p>
             </div>
           </div>
+
+          {dashboard?.insights?.length ? (
+            <div className="grid gap-4 lg:grid-cols-3">
+              {dashboard.insights.slice(0, 3).map((insight) => (
+                <div
+                  key={insight.title}
+                  className={`rounded-[24px] p-5 ${
+                    insight.severity === "warning"
+                      ? "border border-amber-200 bg-amber-50"
+                      : insight.severity === "positive"
+                        ? "border border-emerald-200 bg-emerald-50"
+                        : "glass-panel shadow-glass"
+                  }`}
+                >
+                  <p className="text-sm font-semibold text-ink">{insight.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{insight.description}</p>
+                </div>
+              ))}
+            </div>
+          ) : null}
 
           <div className="grid gap-5 lg:grid-cols-2">
             <MetricHistoryChart
@@ -216,15 +249,41 @@ export default async function FamilyMemberDetailPage({ params }) {
                   <div className="rounded-2xl bg-white/80 p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新靜止心率</p>
                     <p className="mt-1 font-semibold text-ink">
-                      {formatMetricValue(member.latestMetrics?.resting_heart_rate)}
+                      {formatMetricValue(dashboard?.cards?.latestRestingHeartRate || member.latestMetrics?.resting_heart_rate)}
                     </p>
                   </div>
                   <div className="rounded-2xl bg-white/80 p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新睡眠</p>
-                    <p className="mt-1 font-semibold text-ink">{formatMetricValue(member.latestMetrics?.sleep)}</p>
+                    <p className="mt-1 font-semibold text-ink">{formatMetricValue(dashboard?.cards?.latestSleep || member.latestMetrics?.sleep)}</p>
                   </div>
                 </div>
               </div>
+
+              {dashboard?.trends ? (
+                <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">7 天 vs 30 天</p>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl bg-white/80 p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">步數變化</p>
+                      <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.steps)}</p>
+                    </div>
+                    <div className="rounded-2xl bg-white/80 p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">睡眠變化</p>
+                      <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.sleep)}</p>
+                    </div>
+                    <div className="rounded-2xl bg-white/80 p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">靜止心率變化</p>
+                      <p className="mt-1 font-semibold text-ink">
+                        {formatDelta(dashboard.trends.restingHeartRate)}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-white/80 p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">體重變化</p>
+                      <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.weight)}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
               <div className="glass-panel rounded-[28px] p-6 shadow-glass">
                 <div className="flex items-center justify-between gap-4">

@@ -27,6 +27,18 @@ function buildTrendInsight(items, label) {
   return `${label}${delta > 0 ? "上升" : "下降"} ${Math.abs(delta)}。`;
 }
 
+function formatDeltaLabel(trend) {
+  if (!trend || trend.delta === null || trend.delta === undefined) {
+    return "未有足夠資料";
+  }
+
+  if (trend.delta === 0) {
+    return "與 30 天基準相若";
+  }
+
+  return `${trend.delta > 0 ? "+" : ""}${trend.delta} ${trend.unit}`;
+}
+
 export default async function HomePage() {
   let members = [];
   let alex = null;
@@ -49,10 +61,18 @@ export default async function HomePage() {
 
   const alexWeightTrend = alex?.metricTrends?.weight || [];
   const amelieWeightTrend = amelie?.metricTrends?.weight || [];
+  const alexDashboard = alex?.dashboard || null;
+  const amelieDashboard = amelie?.dashboard || null;
   const alexSecondaryMetric =
-    alex?.latestMetrics?.steps || alex?.latestMetrics?.resting_heart_rate || alex?.latestMetrics?.sleep;
+    alexDashboard?.cards?.latestSteps ||
+    alexDashboard?.cards?.latestRestingHeartRate ||
+    alexDashboard?.cards?.latestSleep ||
+    alex?.latestMetrics?.steps;
   const amelieSecondaryMetric =
-    amelie?.latestMetrics?.sleep || amelie?.latestMetrics?.steps || amelie?.latestMetrics?.resting_heart_rate;
+    amelieDashboard?.cards?.latestSleep ||
+    amelieDashboard?.cards?.latestSteps ||
+    amelieDashboard?.cards?.latestRestingHeartRate ||
+    amelie?.latestMetrics?.sleep;
 
   return (
     <section className="space-y-8">
@@ -108,12 +128,16 @@ export default async function HomePage() {
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         <div className="glass-panel rounded-[28px] p-6 shadow-glass">
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Alex 最新體重</p>
-          <p className="mt-2 text-3xl font-semibold text-ink">{formatMetric(alex?.latestMetrics?.weight)}</p>
+          <p className="mt-2 text-3xl font-semibold text-ink">
+            {formatMetric(alexDashboard?.cards?.latestWeight || alex?.latestMetrics?.weight)}
+          </p>
           <p className="mt-2 text-sm text-slate-500">{buildTrendInsight(alexWeightTrend, "體重")}</p>
         </div>
         <div className="glass-panel rounded-[28px] p-6 shadow-glass">
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Amelie 最新體重</p>
-          <p className="mt-2 text-3xl font-semibold text-ink">{formatMetric(amelie?.latestMetrics?.weight)}</p>
+          <p className="mt-2 text-3xl font-semibold text-ink">
+            {formatMetric(amelieDashboard?.cards?.latestWeight || amelie?.latestMetrics?.weight)}
+          </p>
           <p className="mt-2 text-sm text-slate-500">{buildTrendInsight(amelieWeightTrend, "體重")}</p>
         </div>
         <div className="glass-panel rounded-[28px] p-6 shadow-glass">
@@ -141,6 +165,44 @@ export default async function HomePage() {
           label="Amelie 體重趨勢"
           unit="kg"
         />
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="glass-panel rounded-[32px] p-7 shadow-glass">
+          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Alex Trends</p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[22px] bg-white/80 p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">步數 vs 30 天</p>
+              <p className="mt-2 font-semibold text-ink">{formatDeltaLabel(alexDashboard?.trends?.steps)}</p>
+            </div>
+            <div className="rounded-[22px] bg-white/80 p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">睡眠 vs 30 天</p>
+              <p className="mt-2 font-semibold text-ink">{formatDeltaLabel(alexDashboard?.trends?.sleep)}</p>
+            </div>
+            <div className="rounded-[22px] bg-white/80 p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">靜止心率 vs 30 天</p>
+              <p className="mt-2 font-semibold text-ink">
+                {formatDeltaLabel(alexDashboard?.trends?.restingHeartRate)}
+              </p>
+            </div>
+            <div className="rounded-[22px] bg-white/80 p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">體重 vs 30 天</p>
+              <p className="mt-2 font-semibold text-ink">{formatDeltaLabel(alexDashboard?.trends?.weight)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass-panel rounded-[32px] p-7 shadow-glass">
+          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Highlights</p>
+          <div className="mt-5 space-y-3">
+            {[...(alexDashboard?.insights || []).slice(0, 2), ...(amelieDashboard?.insights || []).slice(0, 2)].map((insight) => (
+              <div key={`${insight.title}-${insight.description}`} className="rounded-[22px] bg-white/80 p-4">
+                <p className="text-sm font-semibold text-ink">{insight.title}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{insight.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
