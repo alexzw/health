@@ -4,8 +4,10 @@ import { analyzeGrowthMeasurements } from "../lib/growth.js";
 import { HttpError } from "../lib/http-error.js";
 
 function presentMember(member) {
-  const latestWeight = findLatestMetric(member.healthDataRecords || [], "weight");
-  const latestHeight = findLatestMetric(member.healthDataRecords || [], "height");
+  const latestWeight =
+    member.latestMetrics?.weight || findLatestMetric(member.healthDataRecords || [], "weight");
+  const latestHeight =
+    member.latestMetrics?.height || findLatestMetric(member.healthDataRecords || [], "height");
 
   return {
     ...member,
@@ -47,7 +49,23 @@ export class FamilyMemberService {
 
   async getFamilyMember(id) {
     const member = await this.repository.findById(id);
-    return member ? presentMember(member) : null;
+
+    if (!member) {
+      return null;
+    }
+
+    const trendCategories = ["weight", "steps", "heart_rate", "resting_heart_rate", "sleep"];
+    const trendEntries = await Promise.all(
+      trendCategories.map(async (category) => [
+        category,
+        await this.repository.findMetricTrendByMemberId(id, category, 14)
+      ])
+    );
+
+    return presentMember({
+      ...member,
+      metricTrends: Object.fromEntries(trendEntries)
+    });
   }
 
   async getGrowthTracking(id) {

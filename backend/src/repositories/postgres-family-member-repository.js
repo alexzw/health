@@ -1,5 +1,8 @@
 import { getPool } from "../db/pool.js";
 
+const RECENT_HEALTH_RECORD_LIMIT = 12;
+const RECENT_EXERCISE_LOG_LIMIT = 8;
+
 function mapRowToMember(row) {
   return {
     id: row.id,
@@ -8,7 +11,10 @@ function mapRowToMember(row) {
     gender: row.gender,
     familyRole: row.family_role,
     healthDataRecords: row.health_data_records || [],
-    exerciseLogs: row.exercise_logs || []
+    exerciseLogs: row.exercise_logs || [],
+    totalHealthRecordCount: Number(row.total_health_record_count || 0),
+    totalExerciseLogCount: Number(row.total_exercise_log_count || 0),
+    latestMetrics: row.latest_metrics || {}
   };
 }
 
@@ -43,12 +49,62 @@ function mapExerciseLogRow(row) {
   };
 }
 
-const memberProjection = `
+function mapTrendPointRow(row) {
+  return {
+    value: Number(row.value),
+    date: row.recorded_at,
+    unit: row.unit
+  };
+}
+
+function buildLatestMetricValueSubquery(category) {
+  return `
+    (
+      SELECT JSON_BUILD_OBJECT(
+        'value', hr.value,
+        'unit', hr.unit,
+        'recordedAt', hr.recorded_at
+      )
+      FROM health_records hr
+      WHERE hr.family_member_id = fm.id AND hr.category = '${category}' AND hr.value IS NOT NULL
+      ORDER BY hr.recorded_at DESC
+      LIMIT 1
+    )
+  `;
+}
+
+const baseMemberProjection = `
   fm.id,
   fm.name,
   TO_CHAR(fm.date_of_birth, 'YYYY-MM-DD') AS date_of_birth,
   fm.gender,
-  fm.family_role,
+  fm.family_role
+`;
+
+const latestMetricsProjection = `
+  JSON_BUILD_OBJECT(
+    'weight', ${buildLatestMetricValueSubquery("weight")},
+    'height', ${buildLatestMetricValueSubquery("height")},
+    'heart_rate', ${buildLatestMetricValueSubquery("heart_rate")},
+    'resting_heart_rate', ${buildLatestMetricValueSubquery("resting_heart_rate")},
+    'steps', ${buildLatestMetricValueSubquery("steps")},
+    'sleep', ${buildLatestMetricValueSubquery("sleep")}
+  ) AS latest_metrics
+`;
+
+const listMemberProjection = `
+  ${baseMemberProjection},
+  COALESCE((SELECT COUNT(*) FROM health_records hr WHERE hr.family_member_id = fm.id), 0) AS total_health_record_count,
+  COALESCE((SELECT COUNT(*) FROM exercise_logs el WHERE el.family_member_id = fm.id), 0) AS total_exercise_log_count,
+  '[]'::json AS health_data_records,
+  '[]'::json AS exercise_logs,
+  ${latestMetricsProjection}
+`;
+
+const detailMemberProjection = `
+  ${baseMemberProjection},
+  COALESCE((SELECT COUNT(*) FROM health_records hr WHERE hr.family_member_id = fm.id), 0) AS total_health_record_count,
+  COALESCE((SELECT COUNT(*) FROM exercise_logs el WHERE el.family_member_id = fm.id), 0) AS total_exercise_log_count,
   COALESCE((
     SELECT JSON_AGG(
       JSON_BUILD_OBJECT(
@@ -61,8 +117,13 @@ const memberProjection = `
       )
       ORDER BY hr.recorded_at DESC
     )
-    FROM health_records hr
-    WHERE hr.family_member_id = fm.id
+    FROM (
+      SELECT id, category, value, unit, notes, recorded_at
+      FROM health_records
+      WHERE family_member_id = fm.id
+      ORDER BY recorded_at DESC
+      LIMIT ${RECENT_HEALTH_RECORD_LIMIT}
+    ) hr
   ), '[]'::json) AS health_data_records,
   COALESCE((
     SELECT JSON_AGG(
@@ -76,9 +137,15 @@ const memberProjection = `
       )
       ORDER BY el.performed_at DESC
     )
-    FROM exercise_logs el
-    WHERE el.family_member_id = fm.id
-  ), '[]'::json) AS exercise_logs
+    FROM (
+      SELECT id, workout_type, duration_minutes, calories_burned, notes, performed_at
+      FROM exercise_logs
+      WHERE family_member_id = fm.id
+      ORDER BY performed_at DESC
+      LIMIT ${RECENT_EXERCISE_LOG_LIMIT}
+    ) el
+  ), '[]'::json) AS exercise_logs,
+  ${latestMetricsProjection}
 `;
 
 export class PostgresFamilyMemberRepository {
@@ -86,7 +153,7 @@ export class PostgresFamilyMemberRepository {
     const pool = getPool();
     const result = await pool.query(`
       SELECT
-        ${memberProjection}
+        ${listMemberProjection}
       FROM family_members fm
       ORDER BY
         CASE fm.family_role
@@ -106,7 +173,7 @@ export class PostgresFamilyMemberRepository {
     const result = await pool.query(
       `
         SELECT
-          ${memberProjection}
+          ${detailMemberProjection}
         FROM family_members fm
         WHERE fm.id = $1;
       `,
@@ -118,6 +185,22 @@ export class PostgresFamilyMemberRepository {
     }
 
     return mapRowToMember(result.rows[0]);
+  }
+
+  async findMetricTrendByMemberId(id, category, limit = 12) {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        SELECT value, unit, recorded_at
+        FROM health_records
+        WHERE family_member_id = $1 AND category = $2 AND value IS NOT NULL
+        ORDER BY recorded_at DESC
+        LIMIT $3;
+      `,
+      [id, category, limit]
+    );
+
+    return result.rows.map(mapTrendPointRow).reverse();
   }
 
   async findGrowthByMemberId(id) {

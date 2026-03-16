@@ -10,6 +10,33 @@ import { calculateBmi } from "../../../lib/bmi";
 import { formatChineseDate } from "../../../lib/format";
 import { getFamilyMember, getGrowthTracking } from "../../../lib/api";
 
+function formatMetricValue(metric, emptyLabel = "未填寫") {
+  if (!metric || metric.value === null || metric.value === undefined) {
+    return emptyLabel;
+  }
+
+  return `${metric.value} ${metric.unit || ""}`.trim();
+}
+
+function pickSecondaryTrend(metricTrends = {}) {
+  const candidates = [
+    ["steps", "步數趨勢", "steps", "#34a853"],
+    ["resting_heart_rate", "靜止心率", "bpm", "#ff6b57"],
+    ["heart_rate", "心率趨勢", "bpm", "#ff8a65"],
+    ["sleep", "睡眠趨勢", "hours", "#5c6ac4"]
+  ];
+
+  return candidates
+    .map(([key, label, unit, color]) => ({
+      key,
+      label,
+      unit,
+      color,
+      items: metricTrends[key] || []
+    }))
+    .find((entry) => entry.items.length);
+}
+
 export async function generateMetadata({ params }) {
   const resolvedParams = await params;
 
@@ -29,23 +56,10 @@ export default async function FamilyMemberDetailPage({ params }) {
   const resolvedParams = await params;
   let member;
   let growth = null;
-  let weightHistory = [];
-  let latestHeightRecord = null;
-  let latestWeightRecord = null;
   let bmi = null;
 
   try {
     member = await getFamilyMember(resolvedParams.id);
-    weightHistory = (member.healthDataRecords || [])
-      .filter((record) => record.category === "weight" && record.value !== null)
-      .map((record) => ({ value: Number(record.value), date: record.recordedAt }))
-      .sort((left, right) => new Date(left.date) - new Date(right.date));
-    latestHeightRecord = (member.healthDataRecords || [])
-      .filter((record) => record.category === "height")
-      .sort((left, right) => new Date(right.recordedAt) - new Date(left.recordedAt))[0] || null;
-    latestWeightRecord = (member.healthDataRecords || [])
-      .filter((record) => record.category === "weight")
-      .sort((left, right) => new Date(right.recordedAt) - new Date(left.recordedAt))[0] || null;
     bmi = member.latestBmi;
 
     if (resolvedParams.id === "ryan") {
@@ -62,6 +76,9 @@ export default async function FamilyMemberDetailPage({ params }) {
 
     throw error;
   }
+
+  const weightHistory = member.metricTrends?.weight || [];
+  const secondaryTrend = pickSecondaryTrend(member.metricTrends);
 
   return (
     <section className="space-y-8">
@@ -95,9 +112,7 @@ export default async function FamilyMemberDetailPage({ params }) {
               </span>
             </div>
             <div className="rounded-2xl bg-white/80 px-4 py-3 text-sm text-ink">
-              <span className="block text-xs uppercase tracking-[0.15em] text-slate-500">
-                生日
-              </span>
+              <span className="block text-xs uppercase tracking-[0.15em] text-slate-500">生日</span>
               <span className="mt-1 block font-semibold">{formatChineseDate(member.dateOfBirth)}</span>
             </div>
             {bmi ? (
@@ -113,9 +128,9 @@ export default async function FamilyMemberDetailPage({ params }) {
       {growth ? (
         <div className="space-y-5">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">功能 2</p>
+            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Ryan 成長追蹤</p>
             <h2 className="mt-2 text-4xl font-semibold tracking-[-0.05em] text-ink">
-              Ryan 成長追蹤
+              成長摘要與圖表
             </h2>
           </div>
           <GrowthInsights growth={growth} />
@@ -143,53 +158,96 @@ export default async function FamilyMemberDetailPage({ params }) {
           <div>
             <p className="text-xs uppercase tracking-[0.24em] text-slate-500">成人健康追蹤</p>
             <h2 className="mt-2 text-4xl font-semibold tracking-[-0.05em] text-ink">
-              體重與運動紀錄
+              健康摘要與趨勢
             </h2>
           </div>
-          <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
+
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">健康紀錄總數</p>
+              <p className="mt-2 text-3xl font-semibold text-ink">{member.totalHealthRecordCount || 0}</p>
+            </div>
+            <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">運動紀錄總數</p>
+              <p className="mt-2 text-3xl font-semibold text-ink">{member.totalExerciseLogCount || 0}</p>
+            </div>
+            <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新體重</p>
+              <p className="mt-2 text-3xl font-semibold text-ink">{formatMetricValue(member.latestMetrics?.weight)}</p>
+            </div>
+            <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新步數</p>
+              <p className="mt-2 text-3xl font-semibold text-ink">{formatMetricValue(member.latestMetrics?.steps)}</p>
+            </div>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-2">
             <MetricHistoryChart
               items={weightHistory}
               color="#0071e3"
               label="體重趨勢"
               unit="kg"
             />
+            {secondaryTrend ? (
+              <MetricHistoryChart
+                items={secondaryTrend.items}
+                color={secondaryTrend.color}
+                label={secondaryTrend.label}
+                unit={secondaryTrend.unit}
+              />
+            ) : (
+              <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+                <p className="text-sm text-slate-500">
+                  Apple Health 匯入更多步數、心率或睡眠資料後，這裡會顯示第二張趨勢圖。
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="space-y-5">
               <div className="glass-panel rounded-[28px] p-6 shadow-glass">
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-500">身體指標</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
                   <div className="rounded-2xl bg-white/80 p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新身高</p>
+                    <p className="mt-1 font-semibold text-ink">{formatMetricValue(member.latestMetrics?.height)}</p>
+                  </div>
+                  <div className="rounded-2xl bg-white/80 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新靜止心率</p>
                     <p className="mt-1 font-semibold text-ink">
-                      {latestHeightRecord ? `${latestHeightRecord.value} cm` : "未填寫"}
+                      {formatMetricValue(member.latestMetrics?.resting_heart_rate)}
                     </p>
                   </div>
                   <div className="rounded-2xl bg-white/80 p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新體重</p>
-                    <p className="mt-1 font-semibold text-ink">
-                      {latestWeightRecord ? `${latestWeightRecord.value} kg` : "未填寫"}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-white/80 p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">BMI</p>
-                    <p className="mt-1 font-semibold text-ink">{bmi || "未能計算"}</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新睡眠</p>
+                    <p className="mt-1 font-semibold text-ink">{formatMetricValue(member.latestMetrics?.sleep)}</p>
                   </div>
                 </div>
               </div>
+
+              <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.24em] text-slate-500">近期健康紀錄</p>
+                    <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">
+                      只顯示最近 {member.healthDataRecords?.length || 0} 筆
+                    </h3>
+                  </div>
+                  <p className="text-sm text-slate-500">總數 {member.totalHealthRecordCount || 0} 筆</p>
+                </div>
+                <div className="mt-5">
+                  <HealthRecordTable records={member.healthDataRecords || []} />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-5">
               <ExerciseLogList logs={member.exerciseLogs || []} />
             </div>
           </div>
         </div>
       ) : null}
-
-      <div className="space-y-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">近期紀錄</p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
-            健康資料歷史
-          </h2>
-        </div>
-        <HealthRecordTable records={member.healthDataRecords} />
-      </div>
 
       <ProfileManagementPanel member={member} growth={growth} />
     </section>

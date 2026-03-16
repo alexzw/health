@@ -1,8 +1,67 @@
 import { seededFamilyMembers } from "../seed/family-members.js";
 
+const RECENT_HEALTH_RECORD_LIMIT = 12;
+const RECENT_EXERCISE_LOG_LIMIT = 8;
+
+function buildLatestMetrics(records) {
+  const latestMetrics = {};
+
+  for (const record of records || []) {
+    if (record.value === null || record.value === undefined) {
+      continue;
+    }
+
+    if (!latestMetrics[record.category]) {
+      latestMetrics[record.category] = {
+        value: record.value,
+        unit: record.unit,
+        recordedAt: record.recordedAt
+      };
+    }
+  }
+
+  return latestMetrics;
+}
+
+function presentListMember(member) {
+  const { growthMeasurements, healthDataRecords, exerciseLogs, ...rest } = member;
+
+  return {
+    ...rest,
+    healthDataRecords: [],
+    exerciseLogs: [],
+    totalHealthRecordCount: healthDataRecords.length,
+    totalExerciseLogCount: exerciseLogs.length,
+    latestMetrics: buildLatestMetrics(
+      [...healthDataRecords].sort(
+        (left, right) => new Date(right.recordedAt) - new Date(left.recordedAt)
+      )
+    )
+  };
+}
+
+function presentDetailMember(member) {
+  const { growthMeasurements, ...rest } = member;
+  const sortedHealthRecords = [...member.healthDataRecords].sort(
+    (left, right) => new Date(right.recordedAt) - new Date(left.recordedAt)
+  );
+  const sortedExerciseLogs = [...member.exerciseLogs].sort(
+    (left, right) => new Date(right.performedAt) - new Date(left.performedAt)
+  );
+
+  return {
+    ...rest,
+    healthDataRecords: sortedHealthRecords.slice(0, RECENT_HEALTH_RECORD_LIMIT),
+    exerciseLogs: sortedExerciseLogs.slice(0, RECENT_EXERCISE_LOG_LIMIT),
+    totalHealthRecordCount: member.healthDataRecords.length,
+    totalExerciseLogCount: member.exerciseLogs.length,
+    latestMetrics: buildLatestMetrics(sortedHealthRecords)
+  };
+}
+
 export class InMemoryFamilyMemberRepository {
   async list() {
-    return seededFamilyMembers.map(({ growthMeasurements, ...member }) => member);
+    return seededFamilyMembers.map(presentListMember);
   }
 
   async findById(id) {
@@ -12,8 +71,7 @@ export class InMemoryFamilyMemberRepository {
       return null;
     }
 
-    const { growthMeasurements, ...rest } = member;
-    return rest;
+    return presentDetailMember(member);
   }
 
   async findGrowthByMemberId(id) {
@@ -24,6 +82,25 @@ export class InMemoryFamilyMemberRepository {
   async findExerciseLogsByMemberId(id) {
     const member = seededFamilyMembers.find((entry) => entry.id === id);
     return member?.exerciseLogs || [];
+  }
+
+  async findMetricTrendByMemberId(id, category, limit = 12) {
+    const member = seededFamilyMembers.find((entry) => entry.id === id);
+
+    if (!member) {
+      return [];
+    }
+
+    return [...member.healthDataRecords]
+      .filter((entry) => entry.category === category && entry.value !== null && entry.value !== undefined)
+      .sort((left, right) => new Date(right.recordedAt) - new Date(left.recordedAt))
+      .slice(0, limit)
+      .map((entry) => ({
+        value: Number(entry.value),
+        date: entry.recordedAt,
+        unit: entry.unit
+      }))
+      .reverse();
   }
 
   async updateMember(id, updates) {

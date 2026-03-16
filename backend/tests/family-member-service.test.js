@@ -18,6 +18,9 @@ test("FamilyMemberService lists family members from the repository", async () =>
     },
     async findById() {
       return null;
+    },
+    async findMetricTrendByMemberId() {
+      return [];
     }
   };
 
@@ -42,6 +45,9 @@ test("FamilyMemberService returns a single family member when present", async ()
         familyRole: "Child",
         healthDataRecords: []
       };
+    },
+    async findMetricTrendByMemberId() {
+      return [];
     }
   };
 
