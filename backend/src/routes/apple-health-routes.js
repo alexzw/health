@@ -10,7 +10,9 @@ export function createAppleHealthRoutes(service) {
   const router = Router();
   const controller = createAppleHealthController(service);
 
+  router.post("/preview-latest", controller.previewLatestZip);
   router.post("/preview", upload.single("file"), controller.previewFile);
+  router.post("/import-latest", controller.importLatestZip);
   router.post("/import", upload.single("file"), controller.importFile);
 
   return router;

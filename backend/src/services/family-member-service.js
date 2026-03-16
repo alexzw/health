@@ -135,6 +135,16 @@ export class FamilyMemberService {
     return this.repository.updateHealthRecord(id, recordId, payload);
   }
 
+  async deleteHealthRecord(id, recordId) {
+    const member = await this.repository.findById(id);
+
+    if (!member) {
+      return null;
+    }
+
+    return this.repository.deleteHealthRecord(id, recordId);
+  }
+
   async addGrowthMeasurement(id, input) {
     const member = await this.repository.findById(id);
 
@@ -187,6 +197,16 @@ export class FamilyMemberService {
     }
 
     return this.repository.updateGrowthMeasurement(id, measurementId, payload);
+  }
+
+  async deleteGrowthMeasurement(id, measurementId) {
+    const member = await this.repository.findById(id);
+
+    if (!member) {
+      return null;
+    }
+
+    return this.repository.deleteGrowthMeasurement(id, measurementId);
   }
 
   async addExerciseLog(id, input) {
@@ -247,5 +267,15 @@ export class FamilyMemberService {
     }
 
     return this.repository.updateExerciseLog(id, exerciseLogId, payload);
+  }
+
+  async deleteExerciseLog(id, exerciseLogId) {
+    const member = await this.repository.findById(id);
+
+    if (!member) {
+      return null;
+    }
+
+    return this.repository.deleteExerciseLog(id, exerciseLogId);
   }
 }

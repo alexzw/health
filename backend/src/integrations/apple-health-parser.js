@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import readline from "node:readline";
 import { XMLParser } from "fast-xml-parser";
 
 function asArray(value) {
@@ -10,6 +12,25 @@ function asArray(value) {
 
 function toIsoDate(dateString) {
   return new Date(dateString).toISOString();
+}
+
+function decodeXmlEntities(value = "") {
+  return value
+    .replaceAll("&quot;", "\"")
+    .replaceAll("&apos;", "'")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&amp;", "&");
+}
+
+function parseXmlAttributes(line) {
+  const attributes = {};
+
+  for (const match of line.matchAll(/([A-Za-z0-9_:-]+)="([^"]*)"/g)) {
+    attributes[`@_${match[1]}`] = decodeXmlEntities(match[2]);
+  }
+
+  return attributes;
 }
 
 function getSleepHours(record) {
@@ -102,6 +123,14 @@ function mapWorkout(workout) {
   };
 }
 
+function isOnOrAfterSinceDate(dateString, sinceDate) {
+  if (!sinceDate) {
+    return true;
+  }
+
+  return new Date(dateString).getTime() >= sinceDate.getTime();
+}
+
 export function parseAppleHealthExport(xmlString) {
   const parser = new XMLParser({
     ignoreAttributes: false,
@@ -120,3 +149,40 @@ export function parseAppleHealthExport(xmlString) {
   };
 }
 
+export async function parseAppleHealthExportFile(filePath, options = {}) {
+  const sinceDate = options.sinceDate || null;
+  const records = [];
+  const workouts = [];
+  const stream = fs.createReadStream(filePath, { encoding: "utf8" });
+  const lineReader = readline.createInterface({
+    input: stream,
+    crlfDelay: Infinity
+  });
+
+  try {
+    for await (const line of lineReader) {
+      const trimmedLine = line.trim();
+
+      if (trimmedLine.startsWith("<Record ")) {
+        const mappedRecord = mapRecordToHealthRecord(parseXmlAttributes(trimmedLine));
+        if (mappedRecord && isOnOrAfterSinceDate(mappedRecord.recordedAt, sinceDate)) {
+          records.push(mappedRecord);
+        }
+      }
+
+      if (trimmedLine.startsWith("<Workout ")) {
+        const workout = mapWorkout(parseXmlAttributes(trimmedLine));
+        if (isOnOrAfterSinceDate(workout.performedAt, sinceDate)) {
+          workouts.push(workout);
+        }
+      }
+    }
+  } finally {
+    lineReader.close();
+  }
+
+  return {
+    records,
+    workouts
+  };
+}

@@ -70,6 +70,23 @@ export class InMemoryFamilyMemberRepository {
     return record;
   }
 
+  async deleteHealthRecord(id, recordId) {
+    const member = seededFamilyMembers.find((entry) => entry.id === id);
+
+    if (!member) {
+      return null;
+    }
+
+    const index = member.healthDataRecords.findIndex((entry) => entry.id === recordId);
+
+    if (index === -1) {
+      return null;
+    }
+
+    const [deletedRecord] = member.healthDataRecords.splice(index, 1);
+    return deletedRecord;
+  }
+
   async createGrowthMeasurement(id, input) {
     const member = seededFamilyMembers.find((entry) => entry.id === id);
 
@@ -106,6 +123,23 @@ export class InMemoryFamilyMemberRepository {
     return measurement;
   }
 
+  async deleteGrowthMeasurement(id, measurementId) {
+    const member = seededFamilyMembers.find((entry) => entry.id === id);
+
+    if (!member) {
+      return null;
+    }
+
+    const index = member.growthMeasurements.findIndex((entry) => entry.id === measurementId);
+
+    if (index === -1) {
+      return null;
+    }
+
+    const [deletedMeasurement] = member.growthMeasurements.splice(index, 1);
+    return deletedMeasurement;
+  }
+
   async createExerciseLog(id, input) {
     const member = seededFamilyMembers.find((entry) => entry.id === id);
 
@@ -136,5 +170,22 @@ export class InMemoryFamilyMemberRepository {
 
     Object.assign(exerciseLog, input);
     return exerciseLog;
+  }
+
+  async deleteExerciseLog(id, exerciseLogId) {
+    const member = seededFamilyMembers.find((entry) => entry.id === id);
+
+    if (!member) {
+      return null;
+    }
+
+    const index = member.exerciseLogs.findIndex((entry) => entry.id === exerciseLogId);
+
+    if (index === -1) {
+      return null;
+    }
+
+    const [deletedExerciseLog] = member.exerciseLogs.splice(index, 1);
+    return deletedExerciseLog;
   }
 }

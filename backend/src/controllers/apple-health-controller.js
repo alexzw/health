@@ -23,6 +23,30 @@ export function createAppleHealthController(service) {
       } catch (error) {
         next(error);
       }
+    },
+    previewLatestZip: async (request, response, next) => {
+      try {
+        const result = await service.previewLatestZip({
+          familyMemberId: request.body.familyMemberId,
+          folderPath: request.body.folderPath
+        });
+
+        response.json({ data: result });
+      } catch (error) {
+        next(error);
+      }
+    },
+    importLatestZip: async (request, response, next) => {
+      try {
+        const result = await service.importLatestZip({
+          familyMemberId: request.body.familyMemberId,
+          folderPath: request.body.folderPath
+        });
+
+        response.status(201).json({ data: result });
+      } catch (error) {
+        next(error);
+      }
     }
   };
 }

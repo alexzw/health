@@ -74,6 +74,15 @@ export async function updateHealthRecord(id, recordId, body) {
   return payload.data;
 }
 
+export async function deleteHealthRecord(id, recordId) {
+  const response = await fetch(`${API_BASE_URL}/family-members/${id}/health-records/${recordId}`, {
+    method: "DELETE"
+  });
+
+  const payload = await handleResponse(response);
+  return payload.data;
+}
+
 export async function createGrowthMeasurement(id, body) {
   const response = await fetch(`${API_BASE_URL}/family-members/${id}/growth-tracking`, {
     method: "POST",
@@ -96,6 +105,18 @@ export async function updateGrowthMeasurement(id, measurementId, body) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify(body)
+    }
+  );
+
+  const payload = await handleResponse(response);
+  return payload.data;
+}
+
+export async function deleteGrowthMeasurement(id, measurementId) {
+  const response = await fetch(
+    `${API_BASE_URL}/family-members/${id}/growth-tracking/${measurementId}`,
+    {
+      method: "DELETE"
     }
   );
 
@@ -129,6 +150,15 @@ export async function updateExerciseLog(id, exerciseLogId, body) {
   return payload.data;
 }
 
+export async function deleteExerciseLog(id, exerciseLogId) {
+  const response = await fetch(`${API_BASE_URL}/family-members/${id}/exercise-logs/${exerciseLogId}`, {
+    method: "DELETE"
+  });
+
+  const payload = await handleResponse(response);
+  return payload.data;
+}
+
 export async function importAppleHealth(memberId, file) {
   const formData = new FormData();
   formData.append("familyMemberId", memberId);
@@ -151,6 +181,38 @@ export async function previewAppleHealthImport(memberId, file) {
   const response = await fetch(`${API_BASE_URL}/apple-health/preview`, {
     method: "POST",
     body: formData
+  });
+
+  const payload = await handleResponse(response);
+  return payload.data;
+}
+
+export async function previewLatestAppleHealthImport(memberId, folderPath) {
+  const response = await fetch(`${API_BASE_URL}/apple-health/preview-latest`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      familyMemberId: memberId,
+      ...(folderPath ? { folderPath } : {})
+    })
+  });
+
+  const payload = await handleResponse(response);
+  return payload.data;
+}
+
+export async function importLatestAppleHealth(memberId, folderPath) {
+  const response = await fetch(`${API_BASE_URL}/apple-health/import-latest`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      familyMemberId: memberId,
+      ...(folderPath ? { folderPath } : {})
+    })
   });
 
   const payload = await handleResponse(response);

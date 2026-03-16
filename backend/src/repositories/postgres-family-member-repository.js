@@ -219,6 +219,24 @@ export class PostgresFamilyMemberRepository {
     return mapHealthRecordRow(result.rows[0]);
   }
 
+  async deleteHealthRecord(id, recordId) {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        DELETE FROM health_records
+        WHERE family_member_id = $1 AND id = $2
+        RETURNING id, category, value, unit, notes, recorded_at;
+      `,
+      [id, recordId]
+    );
+
+    if (result.rowCount === 0) {
+      return null;
+    }
+
+    return mapHealthRecordRow(result.rows[0]);
+  }
+
   async createGrowthMeasurement(id, input) {
     const pool = getPool();
     const measurementId = crypto.randomUUID();
@@ -251,6 +269,24 @@ export class PostgresFamilyMemberRepository {
         RETURNING id, height_cm, weight_kg, measured_at;
       `,
       [id, measurementId, input.heightCm ?? null, input.weightKg ?? null, input.measuredAt ?? null]
+    );
+
+    if (result.rowCount === 0) {
+      return null;
+    }
+
+    return mapGrowthMeasurementRow(result.rows[0]);
+  }
+
+  async deleteGrowthMeasurement(id, measurementId) {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        DELETE FROM growth_measurements
+        WHERE family_member_id = $1 AND id = $2
+        RETURNING id, height_cm, weight_kg, measured_at;
+      `,
+      [id, measurementId]
     );
 
     if (result.rowCount === 0) {
@@ -318,6 +354,24 @@ export class PostgresFamilyMemberRepository {
         input.notes ?? null,
         input.performedAt ?? null
       ]
+    );
+
+    if (result.rowCount === 0) {
+      return null;
+    }
+
+    return mapExerciseLogRow(result.rows[0]);
+  }
+
+  async deleteExerciseLog(id, exerciseLogId) {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        DELETE FROM exercise_logs
+        WHERE family_member_id = $1 AND id = $2
+        RETURNING id, workout_type, duration_minutes, calories_burned, notes, performed_at;
+      `,
+      [id, exerciseLogId]
     );
 
     if (result.rowCount === 0) {

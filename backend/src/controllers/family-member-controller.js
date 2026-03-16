@@ -92,6 +92,25 @@ export function createFamilyMemberController(service) {
         next(error);
       }
     },
+    deleteHealthRecord: async (request, response, next) => {
+      try {
+        const record = await service.deleteHealthRecord(
+          request.params.id,
+          request.params.recordId
+        );
+
+        if (!record) {
+          response.status(404).json({
+            error: "找不到要刪除的健康紀錄"
+          });
+          return;
+        }
+
+        response.json({ data: record });
+      } catch (error) {
+        next(error);
+      }
+    },
     createGrowthMeasurement: async (request, response, next) => {
       try {
         const measurement = await service.addGrowthMeasurement(request.params.id, request.body);
@@ -128,6 +147,25 @@ export function createFamilyMemberController(service) {
         next(error);
       }
     },
+    deleteGrowthMeasurement: async (request, response, next) => {
+      try {
+        const measurement = await service.deleteGrowthMeasurement(
+          request.params.id,
+          request.params.measurementId
+        );
+
+        if (!measurement) {
+          response.status(404).json({
+            error: "找不到要刪除的成長紀錄"
+          });
+          return;
+        }
+
+        response.json({ data: measurement });
+      } catch (error) {
+        next(error);
+      }
+    },
     createExerciseLog: async (request, response, next) => {
       try {
         const exerciseLog = await service.addExerciseLog(request.params.id, request.body);
@@ -155,6 +193,25 @@ export function createFamilyMemberController(service) {
         if (!exerciseLog) {
           response.status(404).json({
             error: "找不到要更新的運動紀錄"
+          });
+          return;
+        }
+
+        response.json({ data: exerciseLog });
+      } catch (error) {
+        next(error);
+      }
+    },
+    deleteExerciseLog: async (request, response, next) => {
+      try {
+        const exerciseLog = await service.deleteExerciseLog(
+          request.params.id,
+          request.params.exerciseLogId
+        );
+
+        if (!exerciseLog) {
+          response.status(404).json({
+            error: "找不到要刪除的運動紀錄"
           });
           return;
         }
