@@ -36,8 +36,8 @@ function mapExerciseLogRow(row) {
   return {
     id: row.id,
     workoutType: row.workout_type,
-    durationMinutes: row.duration_minutes,
-    caloriesBurned: row.calories_burned,
+    durationMinutes: row.duration_minutes === null ? null : Number(row.duration_minutes),
+    caloriesBurned: row.calories_burned === null ? null : Number(row.calories_burned),
     notes: row.notes,
     performedAt: row.performed_at
   };

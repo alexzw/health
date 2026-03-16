@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS exercise_logs (
   id UUID PRIMARY KEY,
   family_member_id TEXT NOT NULL REFERENCES family_members(id) ON DELETE CASCADE,
   workout_type TEXT NOT NULL,
-  duration_minutes INTEGER,
-  calories_burned INTEGER,
+  duration_minutes NUMERIC(10, 2),
+  calories_burned NUMERIC(10, 2),
   notes TEXT,
   performed_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
