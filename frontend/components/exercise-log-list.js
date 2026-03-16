@@ -1,12 +1,4 @@
-function formatDate(dateString) {
-  return new Date(dateString).toLocaleString("zh-HK", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
-}
+import { formatChineseDate } from "../lib/format";
 
 export function ExerciseLogList({ logs }) {
   if (!logs.length) {
@@ -27,7 +19,7 @@ export function ExerciseLogList({ logs }) {
               <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">
                 {log.workoutType}
               </h3>
-              <p className="mt-2 text-sm text-slate-500">{formatDate(log.performedAt)}</p>
+              <p className="mt-2 text-sm text-slate-500">{formatChineseDate(log.performedAt, true)}</p>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-2xl bg-white/80 px-4 py-3">
@@ -46,4 +38,3 @@ export function ExerciseLogList({ logs }) {
     </div>
   );
 }
-

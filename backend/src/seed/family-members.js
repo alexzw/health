@@ -7,6 +7,14 @@ export const seededFamilyMembers = [
     familyRole: "Father",
     healthDataRecords: [
       {
+        id: "09090909-0909-0909-0909-090909090909",
+        category: "height",
+        value: 176,
+        unit: "cm",
+        notes: "Baseline height",
+        recordedAt: "2025-11-12T08:00:00Z"
+      },
+      {
         id: "10101010-1010-1010-1010-101010101010",
         category: "weight",
         value: 79.3,
@@ -66,6 +74,14 @@ export const seededFamilyMembers = [
     gender: "Female",
     familyRole: "Mother",
     healthDataRecords: [
+      {
+        id: "18181818-1818-1818-1818-181818181818",
+        category: "height",
+        value: 165,
+        unit: "cm",
+        notes: "Baseline height",
+        recordedAt: "2025-12-06T08:00:00Z"
+      },
       {
         id: "15151515-1515-1515-1515-151515151515",
         category: "weight",

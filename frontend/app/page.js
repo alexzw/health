@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatChineseDate } from "../lib/format";
 import { getFamilyMembers, getGrowthTracking } from "../lib/api";
 
 export default async function HomePage() {
@@ -19,9 +20,6 @@ export default async function HomePage() {
     <section className="space-y-8">
       <div className="glass-panel overflow-hidden rounded-[40px] px-7 py-10 shadow-panel sm:px-10 lg:px-12">
         <p className="text-xs uppercase tracking-[0.32em] text-slate-500">家庭健康追蹤</p>
-        <h1 className="mt-4 max-w-4xl text-5xl font-semibold tracking-[-0.06em] text-ink sm:text-6xl lg:text-7xl">
-          一個更接近 Apple 風格、可以管理真實家庭健康資料的中文介面。
-        </h1>
         <p className="mt-6 max-w-2xl text-base leading-7 text-slate-600">
           家庭成員檔案、Ryan 成長曲線、手動新增與修改資料的功能都已經接上，下一步就可以把 Apple Health 的真實資料匯入進來。
         </p>
@@ -56,7 +54,8 @@ export default async function HomePage() {
                 </p>
                 <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">{member.name}</h2>
                 <p className="mt-2 text-sm text-slate-500">{member.age} 歲</p>
-                <p className="mt-1 text-sm text-slate-500">{member.dateOfBirthDisplay}</p>
+                <p className="mt-1 text-sm text-slate-500">{formatChineseDate(member.dateOfBirth)}</p>
+                {member.latestBmi ? <p className="mt-1 text-sm text-slate-500">BMI {member.latestBmi}</p> : null}
               </div>
             ))}
           </div>

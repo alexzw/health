@@ -142,3 +142,17 @@ export async function importAppleHealth(memberId, file) {
   const payload = await handleResponse(response);
   return payload.data;
 }
+
+export async function previewAppleHealthImport(memberId, file) {
+  const formData = new FormData();
+  formData.append("familyMemberId", memberId);
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/apple-health/preview`, {
+    method: "POST",
+    body: formData
+  });
+
+  const payload = await handleResponse(response);
+  return payload.data;
+}

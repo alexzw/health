@@ -7,11 +7,13 @@ import {
   createGrowthMeasurement,
   createHealthRecord,
   importAppleHealth,
+  previewAppleHealthImport,
   updateExerciseLog,
   updateFamilyMember,
   updateGrowthMeasurement,
   updateHealthRecord
 } from "../lib/api";
+import { formatCategoryLabel, formatChineseDate } from "../lib/format";
 
 const baseInputClass =
   "mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-blue focus:ring-4 focus:ring-blue/10";
@@ -143,6 +145,7 @@ export function ProfileManagementPanel({ member, growth }) {
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [appleHealthFile, setAppleHealthFile] = useState(null);
+  const [appleHealthPreview, setAppleHealthPreview] = useState(null);
 
   const [profileForm, setProfileForm] = useState({
     name: member.name,
@@ -309,16 +312,8 @@ export function ProfileManagementPanel({ member, growth }) {
           description="每一條紀錄都可以直接改，不用先選。"
           items={member.healthDataRecords || []}
           getKey={(item) => item.id}
-          getTitle={(item) => item.category}
-          getSubtitle={(item) =>
-            new Date(item.recordedAt).toLocaleString("zh-HK", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit"
-            })
-          }
+          getTitle={(item) => formatCategoryLabel(item.category)}
+          getSubtitle={(item) => formatChineseDate(item.recordedAt, true)}
           initialValues={(item) => ({
             category: item.category,
             value: item.value === null ? "" : String(item.value),
@@ -443,7 +438,7 @@ export function ProfileManagementPanel({ member, growth }) {
           items={growth?.measurements || []}
           getKey={(item) => item.id}
           getTitle={(item) => `${item.heightCm} cm / ${item.weightKg} kg`}
-          getSubtitle={(item) => new Date(item.measuredAt).toLocaleDateString("zh-HK")}
+          getSubtitle={(item) => formatChineseDate(item.measuredAt)}
           initialValues={(item) => ({
             heightCm: String(item.heightCm ?? ""),
             weightKg: String(item.weightKg ?? ""),
@@ -576,7 +571,7 @@ export function ProfileManagementPanel({ member, growth }) {
           items={member.exerciseLogs || []}
           getKey={(item) => item.id}
           getTitle={(item) => item.workoutType}
-          getSubtitle={(item) => new Date(item.performedAt).toLocaleString("zh-HK")}
+          getSubtitle={(item) => formatChineseDate(item.performedAt, true)}
           initialValues={(item) => ({
             workoutType: item.workoutType,
             durationMinutes: String(item.durationMinutes ?? ""),
@@ -673,8 +668,35 @@ export function ProfileManagementPanel({ member, growth }) {
               onChange={(event) => setAppleHealthFile(event.target.files?.[0] || null)}
             />
           </FieldLabel>
-          <SubmitButton disabled={isSaving}>開始匯入</SubmitButton>
+          <div className="flex flex-wrap gap-3">
+            <SubmitButton disabled={isSaving}>開始匯入</SubmitButton>
+            <button
+              type="button"
+              disabled={isSaving || !appleHealthFile}
+              className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-ink transition disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() =>
+                runAction(
+                  async () => {
+                    const previewResult = await previewAppleHealthImport(member.id, appleHealthFile);
+                    setAppleHealthPreview(previewResult.preview);
+                  },
+                  "已產生匯入預覽"
+                )
+              }
+            >
+              先看預覽
+            </button>
+          </div>
         </form>
+        {appleHealthPreview ? (
+          <div className="mt-5 rounded-[22px] bg-white/70 p-4 text-sm leading-6 text-slate-600">
+            <p>預覽結果：</p>
+            <p>可新增健康紀錄：{appleHealthPreview.newRecordCount} 筆</p>
+            <p>會跳過重複健康紀錄：{appleHealthPreview.duplicateRecordCount} 筆</p>
+            <p>可新增運動紀錄：{appleHealthPreview.newWorkoutCount} 筆</p>
+            <p>會跳過重複運動紀錄：{appleHealthPreview.duplicateWorkoutCount} 筆</p>
+          </div>
+        ) : null}
         <div className="mt-5 rounded-[22px] bg-white/70 p-4 text-sm leading-6 text-slate-600">
           <p>匯入方式：</p>
           <p>1. 在 iPhone 打開「健康」App。</p>

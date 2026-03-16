@@ -1,12 +1,17 @@
 import { calculateAge, formatDisplayDate } from "../lib/date.js";
+import { calculateBmi, findLatestMetric } from "../lib/body-metrics.js";
 import { analyzeGrowthMeasurements } from "../lib/growth.js";
 import { HttpError } from "../lib/http-error.js";
 
 function presentMember(member) {
+  const latestWeight = findLatestMetric(member.healthDataRecords || [], "weight");
+  const latestHeight = findLatestMetric(member.healthDataRecords || [], "height");
+
   return {
     ...member,
     age: calculateAge(member.dateOfBirth),
-    dateOfBirthDisplay: formatDisplayDate(member.dateOfBirth)
+    dateOfBirthDisplay: formatDisplayDate(member.dateOfBirth),
+    latestBmi: calculateBmi(latestWeight?.value || null, latestHeight?.value || null)
   };
 }
 

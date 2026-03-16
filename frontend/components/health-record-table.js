@@ -1,6 +1,4 @@
-function formatCategory(category) {
-  return category.replaceAll("_", " ");
-}
+import { formatCategoryLabel, formatChineseDate } from "../lib/format";
 
 function formatValue(record) {
   if (record.value === null || record.value === undefined) {
@@ -33,15 +31,9 @@ export function HealthRecordTable({ records }) {
         <tbody>
           {records.map((record) => (
             <tr key={record.id} className="border-t border-slate-100/90">
-              <td className="px-5 py-4 capitalize">{formatCategory(record.category)}</td>
+              <td className="px-5 py-4">{formatCategoryLabel(record.category)}</td>
               <td className="px-5 py-4">{formatValue(record)}</td>
-              <td className="px-5 py-4">
-                {new Date(record.recordedAt).toLocaleDateString("zh-HK", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric"
-                })}
-              </td>
+              <td className="px-5 py-4">{formatChineseDate(record.recordedAt)}</td>
               <td className="px-5 py-4 text-slate-600">{record.notes || "無"}</td>
             </tr>
           ))}

@@ -1,3 +1,4 @@
+import { formatChineseDate } from "../lib/format";
 import Link from "next/link";
 
 export function MemberCard({ member }) {
@@ -26,10 +27,11 @@ export function MemberCard({ member }) {
       <p className="mt-4 text-sm text-slate-500">
         {member.gender === "Male" ? "男" : member.gender === "Female" ? "女" : member.gender}
       </p>
-      <p className="mt-2 text-sm text-slate-500">{member.dateOfBirthDisplay}</p>
+      <p className="mt-2 text-sm text-slate-500">{formatChineseDate(member.dateOfBirth)}</p>
       <p className="mt-6 text-sm text-slate-700">
         近期健康紀錄 {member.healthDataRecords.length} 筆
       </p>
+      {member.latestBmi ? <p className="mt-2 text-sm text-slate-500">BMI {member.latestBmi}</p> : null}
       <div className="mt-8 text-sm font-semibold text-blue transition group-hover:translate-x-1">
         查看檔案 →
       </div>

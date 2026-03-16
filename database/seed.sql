@@ -7,10 +7,12 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO health_records (id, family_member_id, category, value, unit, notes, recorded_at)
 VALUES
+  ('09090909-0909-0909-0909-090909090909', 'alex', 'height', 176, 'cm', 'Baseline height', '2025-11-12T08:00:00Z'),
   ('10101010-1010-1010-1010-101010101010', 'alex', 'weight', 79.3, 'kg', 'Monthly baseline', '2025-11-12T08:00:00Z'),
   ('12121212-1212-1212-1212-121212121212', 'alex', 'weight', 78.9, 'kg', 'Post-training week', '2026-01-18T08:00:00Z'),
   ('11111111-1111-1111-1111-111111111111', 'alex', 'weight', 78.4, 'kg', 'Weekly weigh-in', '2026-03-10T08:00:00Z'),
   ('22222222-2222-2222-2222-222222222222', 'alex', 'resting_heart_rate', 58, 'bpm', 'Captured from Apple Watch summary', '2026-03-10T08:00:00Z'),
+  ('18181818-1818-1818-1818-181818181818', 'amelie', 'height', 165, 'cm', 'Baseline height', '2025-12-06T08:00:00Z'),
   ('15151515-1515-1515-1515-151515151515', 'amelie', 'weight', 62.1, 'kg', 'Monthly check-in', '2025-12-06T08:00:00Z'),
   ('33333333-3333-3333-3333-333333333333', 'amelie', 'weight', 61.2, 'kg', 'Post-workout check-in', '2026-03-12T08:00:00Z'),
   ('44444444-4444-4444-4444-444444444444', 'amelie', 'sleep', 7.5, 'hours', 'Average overnight sleep', '2026-03-12T08:00:00Z'),

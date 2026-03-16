@@ -6,6 +6,8 @@ import { GrowthInsights } from "../../../components/growth-insights";
 import { HealthRecordTable } from "../../../components/health-record-table";
 import { MetricHistoryChart } from "../../../components/metric-history-chart";
 import { ProfileManagementPanel } from "../../../components/profile-management-panel";
+import { calculateBmi } from "../../../lib/bmi";
+import { formatChineseDate } from "../../../lib/format";
 import { getFamilyMember, getGrowthTracking } from "../../../lib/api";
 
 export async function generateMetadata({ params }) {
@@ -28,6 +30,9 @@ export default async function FamilyMemberDetailPage({ params }) {
   let member;
   let growth = null;
   let weightHistory = [];
+  let latestHeightRecord = null;
+  let latestWeightRecord = null;
+  let bmi = null;
 
   try {
     member = await getFamilyMember(resolvedParams.id);
@@ -35,9 +40,20 @@ export default async function FamilyMemberDetailPage({ params }) {
       .filter((record) => record.category === "weight" && record.value !== null)
       .map((record) => ({ value: Number(record.value), date: record.recordedAt }))
       .sort((left, right) => new Date(left.date) - new Date(right.date));
+    latestHeightRecord = (member.healthDataRecords || [])
+      .filter((record) => record.category === "height")
+      .sort((left, right) => new Date(right.recordedAt) - new Date(left.recordedAt))[0] || null;
+    latestWeightRecord = (member.healthDataRecords || [])
+      .filter((record) => record.category === "weight")
+      .sort((left, right) => new Date(right.recordedAt) - new Date(left.recordedAt))[0] || null;
+    bmi = member.latestBmi;
 
     if (resolvedParams.id === "ryan") {
       growth = await getGrowthTracking(resolvedParams.id);
+      bmi = calculateBmi(
+        growth?.summary?.latestMeasurement?.weightKg || null,
+        growth?.summary?.latestMeasurement?.heightCm || null
+      );
     }
   } catch (error) {
     if (String(error.message).includes("404")) {
@@ -82,8 +98,14 @@ export default async function FamilyMemberDetailPage({ params }) {
               <span className="block text-xs uppercase tracking-[0.15em] text-slate-500">
                 生日
               </span>
-              <span className="mt-1 block font-semibold">{member.dateOfBirthDisplay}</span>
+              <span className="mt-1 block font-semibold">{formatChineseDate(member.dateOfBirth)}</span>
             </div>
+            {bmi ? (
+              <div className="rounded-2xl bg-white/80 px-4 py-3 text-sm text-ink">
+                <span className="block text-xs uppercase tracking-[0.15em] text-slate-500">BMI</span>
+                <span className="mt-1 block font-semibold">{bmi}</span>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -131,7 +153,30 @@ export default async function FamilyMemberDetailPage({ params }) {
               label="體重趨勢"
               unit="kg"
             />
-            <ExerciseLogList logs={member.exerciseLogs || []} />
+            <div className="space-y-5">
+              <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+                <p className="text-xs uppercase tracking-[0.24em] text-slate-500">身體指標</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl bg-white/80 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新身高</p>
+                    <p className="mt-1 font-semibold text-ink">
+                      {latestHeightRecord ? `${latestHeightRecord.value} cm` : "未填寫"}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white/80 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新體重</p>
+                    <p className="mt-1 font-semibold text-ink">
+                      {latestWeightRecord ? `${latestWeightRecord.value} kg` : "未填寫"}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white/80 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">BMI</p>
+                    <p className="mt-1 font-semibold text-ink">{bmi || "未能計算"}</p>
+                  </div>
+                </div>
+              </div>
+              <ExerciseLogList logs={member.exerciseLogs || []} />
+            </div>
           </div>
         </div>
       ) : null}
