@@ -423,6 +423,65 @@ function AppleHealthPreview({ preview }) {
   );
 }
 
+function AppleHealthImportStatus({ status, result }) {
+  if (!status && !result) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-4">
+      {status ? (
+        <div className="rounded-[24px] border border-blue/15 bg-blue/5 p-5">
+          <div className="flex items-center gap-3">
+            <div className="h-3 w-3 animate-pulse rounded-full bg-blue" />
+            <p className="text-sm font-semibold text-ink">{status.title}</p>
+          </div>
+          <p className="mt-2 text-sm leading-6 text-slate-600">{status.description}</p>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-blue/10">
+            <div className="h-full w-2/3 animate-pulse rounded-full bg-blue" />
+          </div>
+        </div>
+      ) : null}
+
+      {result ? (
+        <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 p-5">
+          <p className="text-base font-semibold text-ink">最近一次匯入結果</p>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <div className="rounded-2xl bg-white/80 p-4">
+              <p className="text-sm text-slate-500">新增健康紀錄</p>
+              <p className="mt-1 text-2xl font-semibold text-ink">{result.importedRecordCount}</p>
+            </div>
+            <div className="rounded-2xl bg-white/80 p-4">
+              <p className="text-sm text-slate-500">略過重複健康紀錄</p>
+              <p className="mt-1 text-2xl font-semibold text-ink">
+                {result.skippedDuplicateRecordCount}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white/80 p-4">
+              <p className="text-sm text-slate-500">新增運動紀錄</p>
+              <p className="mt-1 text-2xl font-semibold text-ink">{result.importedWorkoutCount}</p>
+            </div>
+            <div className="rounded-2xl bg-white/80 p-4">
+              <p className="text-sm text-slate-500">略過重複運動紀錄</p>
+              <p className="mt-1 text-2xl font-semibold text-ink">
+                {result.skippedDuplicateWorkoutCount}
+              </p>
+            </div>
+          </div>
+          {result.source ? (
+            <div className="mt-4 rounded-2xl bg-white/80 p-4 text-sm text-slate-600">
+              <p>來源 zip：{result.source.zipPath}</p>
+              {result.source.sinceDate ? (
+                <p className="mt-1">同步範圍：{formatChineseDate(result.source.sinceDate)} 之後</p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function ProfileManagementPanel({ member, growth }) {
   const router = useRouter();
   const isAdult = member.familyRole !== "Child";
@@ -442,6 +501,8 @@ export function ProfileManagementPanel({ member, growth }) {
   const [isSaving, setIsSaving] = useState(false);
   const [appleHealthFile, setAppleHealthFile] = useState(null);
   const [appleHealthPreview, setAppleHealthPreview] = useState(null);
+  const [appleHealthStatus, setAppleHealthStatus] = useState(null);
+  const [appleHealthImportResult, setAppleHealthImportResult] = useState(null);
 
   const [profileForm, setProfileForm] = useState({
     name: member.name,
@@ -481,6 +542,7 @@ export function ProfileManagementPanel({ member, growth }) {
       setMessage(successMessage);
       router.refresh();
     } catch (actionError) {
+      setAppleHealthStatus(null);
       setError(actionError.message);
     } finally {
       setIsSaving(false);
@@ -893,12 +955,18 @@ export function ProfileManagementPanel({ member, growth }) {
               className="md:w-fit"
               onClick={() =>
                 runAction(async () => {
+                  setAppleHealthStatus({
+                    title: "正在讀取最新匯出",
+                    description: "系統正從 iCloud Drive 找最新 zip，解壓並分析最近 30 日資料。"
+                  });
+                  setAppleHealthImportResult(null);
                   const preview = await previewLatestAppleHealthImport(member.id);
                   setAppleHealthPreview(preview);
+                  setAppleHealthStatus(null);
                 }, "已讀取 iCloud Drive 最新匯出預覽")
               }
             >
-              讀取 iCloud 最新匯出預覽
+              {appleHealthStatus ? "正在分析..." : "讀取 iCloud 最新匯出預覽"}
             </SubmitButton>
             <SubmitButton
               type="button"
@@ -907,15 +975,21 @@ export function ProfileManagementPanel({ member, growth }) {
               onClick={() =>
                 runAction(
                   async () => {
+                    setAppleHealthStatus({
+                      title: "正在自動匯入",
+                      description: "系統正在解壓最新 zip、過濾重複資料，並把最近 30 日 Apple Health 資料寫入資料庫。"
+                    });
                     const result = await importLatestAppleHealth(member.id);
                     setAppleHealthPreview(null);
+                    setAppleHealthImportResult(result);
+                    setAppleHealthStatus(null);
                     return result;
                   },
                   "已自動從 iCloud Drive 最新 zip 匯入"
                 )
               }
             >
-              自動匯入最新 zip
+              {appleHealthStatus ? "正在匯入..." : "自動匯入最新 zip"}
             </SubmitButton>
           </div>
           <p className="mt-4 text-sm leading-6 text-slate-500">
@@ -926,6 +1000,8 @@ export function ProfileManagementPanel({ member, growth }) {
             裡最新的 zip，解壓後自動找到 <code>export.xml</code>，並只同步最近 30 日資料。
           </p>
         </SectionCard>
+
+        <AppleHealthImportStatus status={appleHealthStatus} result={appleHealthImportResult} />
 
         <SectionCard
           title="手動上傳 Apple Health 匯出檔"
@@ -950,12 +1026,18 @@ export function ProfileManagementPanel({ member, growth }) {
                 className="md:w-fit"
                 onClick={() =>
                   runAction(async () => {
+                    setAppleHealthStatus({
+                      title: "正在分析上傳檔案",
+                      description: "系統正在讀取你選擇的 export.xml，並生成匯入預覽。"
+                    });
+                    setAppleHealthImportResult(null);
                     const preview = await previewAppleHealthImport(member.id, appleHealthFile);
                     setAppleHealthPreview(preview);
+                    setAppleHealthStatus(null);
                   }, "已生成匯入預覽")
                 }
               >
-                先看預覽
+                {appleHealthStatus ? "正在分析..." : "先看預覽"}
               </SubmitButton>
               <SubmitButton
                 type="button"
@@ -963,13 +1045,19 @@ export function ProfileManagementPanel({ member, growth }) {
                 className="md:w-fit"
                 onClick={() =>
                   runAction(async () => {
+                    setAppleHealthStatus({
+                      title: "正在匯入上傳檔案",
+                      description: "系統正在解析你選擇的 Apple Health 匯出檔，並寫入資料庫。"
+                    });
                     const result = await importAppleHealth(member.id, appleHealthFile);
                     setAppleHealthPreview(null);
+                    setAppleHealthImportResult(result);
+                    setAppleHealthStatus(null);
                     return result;
                   }, "Apple Health 已匯入")
                 }
               >
-                開始匯入
+                {appleHealthStatus ? "正在匯入..." : "開始匯入"}
               </SubmitButton>
             </div>
           </div>
