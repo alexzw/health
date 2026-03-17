@@ -9,6 +9,7 @@ import {
   deleteExerciseLog,
   deleteGrowthMeasurement,
   deleteHealthRecord,
+  getAppleHealthJob,
   importAppleHealth,
   importLatestAppleHealth,
   previewAppleHealthImport,
@@ -930,11 +931,41 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
     setAppleHealthJob({
       kind,
       phase: "error",
+      importScope: appleHealthImportScope,
       title,
       description,
       result: null,
       error: errorMessage
     });
+  }
+
+  async function waitForAppleHealthJob(jobId, kind, title, description) {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < 1000 * 60 * 20) {
+      const job = await getAppleHealthJob(jobId);
+
+      if (job.status === "completed") {
+        return job.result;
+      }
+
+      if (job.status === "failed") {
+        throw new Error(job.error || t(lang, "Apple Health 工作失敗", "Apple Health job failed"));
+      }
+
+      setAppleHealthJob((current) => ({
+        ...(current || {}),
+        kind,
+        phase: "running",
+        importScope: job.importScope || appleHealthImportScope,
+        title,
+        description
+      }));
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    throw new Error(t(lang, "Apple Health 工作超時，請稍後再查看結果。", "Apple Health job timed out. Please check again shortly."));
   }
 
   async function handleAppleHealthPreviewLatest() {
@@ -948,7 +979,15 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
     );
 
     try {
-      const preview = await previewLatestAppleHealthImport(member.id, undefined, appleHealthImportScope);
+      const startedJob = await previewLatestAppleHealthImport(member.id, undefined, appleHealthImportScope);
+      const preview = await waitForAppleHealthJob(
+        startedJob.jobId,
+        "preview-latest",
+        `正在讀取 ${member.name} 的 iCloud Drive 匯出`,
+        appleHealthImportScope === "all"
+          ? `系統正在背景分析 ${member.name} 的完整 Apple Health 匯出，可能需要較長時間。`
+          : `系統正在背景分析 ${member.name} 最近 30 日的 Apple Health 匯出。`
+      );
       setAppleHealthPreview(preview);
       finishAppleHealthJob(
         "preview-latest",
@@ -977,7 +1016,15 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
     );
 
     try {
-      const result = await importLatestAppleHealth(member.id, undefined, appleHealthImportScope);
+      const startedJob = await importLatestAppleHealth(member.id, undefined, appleHealthImportScope);
+      const result = await waitForAppleHealthJob(
+        startedJob.jobId,
+        "import-latest",
+        `正在匯入 ${member.name} 的最新 zip`,
+        appleHealthImportScope === "all"
+          ? `系統正在背景匯入 ${member.name} 的完整 Apple Health 資料，可能需要較長時間。`
+          : `系統正在背景匯入 ${member.name} 最近 30 日的 Apple Health 資料。`
+      );
       finishAppleHealthJob(
         "import-latest",
         `${member.name} 的自動匯入完成`,

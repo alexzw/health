@@ -26,26 +26,36 @@ export function createAppleHealthController(service) {
     },
     previewLatestZip: async (request, response, next) => {
       try {
-        const result = await service.previewLatestZip({
+        const result = await service.startLatestZipJob({
           familyMemberId: request.body.familyMemberId,
           folderPath: request.body.folderPath,
-          importScope: request.body.importScope
+          importScope: request.body.importScope,
+          mode: "preview"
         });
 
-        response.json({ data: result });
+        response.status(202).json({ data: result });
       } catch (error) {
         next(error);
       }
     },
     importLatestZip: async (request, response, next) => {
       try {
-        const result = await service.importLatestZip({
+        const result = await service.startLatestZipJob({
           familyMemberId: request.body.familyMemberId,
           folderPath: request.body.folderPath,
-          importScope: request.body.importScope
+          importScope: request.body.importScope,
+          mode: "import"
         });
 
-        response.status(201).json({ data: result });
+        response.status(202).json({ data: result });
+      } catch (error) {
+        next(error);
+      }
+    },
+    getJob: async (request, response, next) => {
+      try {
+        const result = service.getJob(request.params.jobId);
+        response.json({ data: result });
       } catch (error) {
         next(error);
       }

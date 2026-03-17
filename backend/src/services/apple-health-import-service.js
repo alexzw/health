@@ -13,6 +13,7 @@ import {
 export class AppleHealthImportService {
   constructor(familyMemberService) {
     this.familyMemberService = familyMemberService;
+    this.jobs = new Map();
   }
 
   normalizeImportScope(scope) {
@@ -27,6 +28,94 @@ export class AppleHealthImportService {
   getSinceDateForScope(scope) {
     const normalizedScope = this.normalizeImportScope(scope);
     return normalizedScope === "all" ? null : this.getDefaultSinceDate();
+  }
+
+  createJob({ kind, familyMemberId, memberName, importScope }) {
+    const id = `apple-health-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const job = {
+      id,
+      kind,
+      familyMemberId,
+      memberName,
+      importScope: this.normalizeImportScope(importScope),
+      status: "queued",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      result: null,
+      error: ""
+    };
+    this.jobs.set(id, job);
+    return job;
+  }
+
+  updateJob(id, patch) {
+    const current = this.jobs.get(id);
+    if (!current) {
+      return null;
+    }
+
+    const next = {
+      ...current,
+      ...patch,
+      updatedAt: new Date().toISOString()
+    };
+    this.jobs.set(id, next);
+    return next;
+  }
+
+  getJob(id) {
+    const job = this.jobs.get(id);
+    if (!job) {
+      throw new HttpError(404, "找不到 Apple Health 工作");
+    }
+
+    return job;
+  }
+
+  async startLatestZipJob({ familyMemberId, folderPath, importScope, mode }) {
+    const member = await this.familyMemberService.getFamilyMember(familyMemberId);
+
+    if (!member) {
+      throw new HttpError(404, "找不到要匯入的家庭成員");
+    }
+
+    const job = this.createJob({
+      kind: mode === "preview" ? "preview-latest" : "import-latest",
+      familyMemberId,
+      memberName: member.name,
+      importScope
+    });
+
+    queueMicrotask(async () => {
+      this.updateJob(job.id, { status: "running" });
+
+      try {
+        const result =
+          mode === "preview"
+            ? await this.previewLatestZip({ familyMemberId, folderPath, importScope })
+            : await this.importLatestZip({ familyMemberId, folderPath, importScope });
+
+        this.updateJob(job.id, {
+          status: "completed",
+          result,
+          error: ""
+        });
+      } catch (error) {
+        this.updateJob(job.id, {
+          status: "failed",
+          error: error.message || "Apple Health 工作失敗"
+        });
+      }
+    });
+
+    return {
+      jobId: job.id,
+      kind: job.kind,
+      status: job.status,
+      familyMemberId,
+      memberName: member.name,
+      importScope: job.importScope
+    };
   }
 
   async previewFile({ familyMemberId, xmlString }) {

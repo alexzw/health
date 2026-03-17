@@ -260,3 +260,12 @@ export async function importLatestAppleHealth(memberId, folderPath, importScope 
   const payload = await handleResponse(response);
   return payload.data;
 }
+
+export async function getAppleHealthJob(jobId) {
+  const response = await fetch(`${API_BASE_URL}/apple-health/jobs/${jobId}`, {
+    cache: "no-store"
+  });
+
+  const payload = await handleResponse(response);
+  return payload.data;
+}
