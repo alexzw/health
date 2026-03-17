@@ -128,6 +128,10 @@ function isManualRecord(record) {
   return !String(record?.notes || "").startsWith("由 ");
 }
 
+function isManualExerciseLog(log) {
+  return !String(log?.notes || "").startsWith("由 ");
+}
+
 function getHealthCategoryOrder(category) {
   const map = {
     weight: 0,
@@ -632,6 +636,7 @@ export function ProfileManagementPanel({ member, growth }) {
     )
     .sort((left, right) => new Date(right.recordedAt).getTime() - new Date(left.recordedAt).getTime())[0];
   const manualHealthRecords = (member.healthDataRecords || []).filter(isManualRecord);
+  const manualExerciseLogs = (member.exerciseLogs || []).filter(isManualExerciseLog);
   const tabs = [
     { id: "profile", label: "個人資料" },
     { id: "record", label: "健康紀錄" },
@@ -1392,8 +1397,8 @@ export function ProfileManagementPanel({ member, growth }) {
 
         <EditableList
           title="快速修改運動紀錄"
-          description="每條運動紀錄都可以直接改和刪除。"
-          items={member.exerciseLogs || []}
+          description="只會顯示人手新增的運動紀錄；Apple Health 匯入的資料不會在這裡修改。"
+          items={manualExerciseLogs}
           getKey={(item) => item.id}
           getTitle={(item) => item.workoutType}
           getSubtitle={(item) => formatChineseDate(item.performedAt, true)}
@@ -1491,7 +1496,7 @@ export function ProfileManagementPanel({ member, growth }) {
             runAction(() => deleteExerciseLog(member.id, item.id), "運動紀錄已刪除")
           }
           isSaving={isSaving}
-          emptyText="暫時沒有運動紀錄。"
+          emptyText="暫時沒有可修改的人手運動紀錄。"
           deleteLabel="運動紀錄"
         />
       </div>
