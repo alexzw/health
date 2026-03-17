@@ -18,7 +18,7 @@ export function GrowthInsights({ growth }) {
   return (
     <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
       <div className="glass-panel rounded-[28px] p-6 shadow-glass">
-        <p className="text-xs uppercase tracking-[0.24em] text-slate-500">成長摘要</p>
+        <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Growth Summary</p>
         <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
           Ryan 累計長高了 {growth.summary.totalHeightGainCm} cm
         </h3>
@@ -27,13 +27,13 @@ export function GrowthInsights({ growth }) {
         </p>
         <div className="mt-6 grid grid-cols-2 gap-3">
           <div className="rounded-2xl bg-white/80 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">最新身高</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Latest Height</p>
             <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">
               {growth.summary.latestMeasurement.heightCm} cm
             </p>
           </div>
           <div className="rounded-2xl bg-white/80 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">最新體重</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Latest Weight</p>
             <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">
               {growth.summary.latestMeasurement.weightKg} kg
             </p>

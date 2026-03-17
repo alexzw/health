@@ -13,10 +13,10 @@ import { getFamilyMember, getGrowthTracking } from "../../../lib/api";
 
 function pickSecondaryTrend(metricTrends = {}) {
   const candidates = [
-    ["steps", "步數趨勢", "steps", "#34a853"],
-    ["resting_heart_rate", "靜止心率", "bpm", "#ff6b57"],
-    ["heart_rate", "心率趨勢", "bpm", "#ff8a65"],
-    ["sleep", "睡眠趨勢", "hours", "#5c6ac4"]
+    ["steps", "Steps Trend", "steps", "#34a853"],
+    ["resting_heart_rate", "Resting Heart Rate", "bpm", "#ff6b57"],
+    ["heart_rate", "Heart Rate Trend", "bpm", "#ff8a65"],
+    ["sleep", "Sleep Trend", "hours", "#5c6ac4"]
   ];
 
   return candidates
@@ -140,9 +140,9 @@ export default async function FamilyMemberDetailPage({ params }) {
       {growth ? (
         <div className="space-y-5">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Ryan 成長追蹤</p>
+            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Ryan Growth Tracking</p>
             <h2 className="mt-2 text-4xl font-semibold tracking-[-0.05em] text-ink">
-              成長摘要與圖表
+              Growth Summary and Charts
             </h2>
           </div>
           <GrowthInsights growth={growth} />
@@ -151,14 +151,14 @@ export default async function FamilyMemberDetailPage({ params }) {
               measurements={growth.measurements}
               metric="heightCm"
               color="#0071e3"
-              label="身高趨勢"
+              label="Height Trend"
               unit="cm"
             />
             <GrowthChart
               measurements={growth.measurements}
               metric="weightKg"
               color="#34a853"
-              label="體重趨勢"
+              label="Weight Trend"
               unit="kg"
             />
           </div>
@@ -168,23 +168,23 @@ export default async function FamilyMemberDetailPage({ params }) {
       {member.familyRole !== "Child" ? (
         <div className="space-y-5">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">成人健康追蹤</p>
+            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Adult Health Tracking</p>
             <h2 className="mt-2 text-4xl font-semibold tracking-[-0.05em] text-ink">
-              健康摘要與趨勢
+              Health Summary and Trends
             </h2>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             <div className="glass-panel rounded-[28px] p-6 shadow-glass">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">健康紀錄總數</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Health Records</p>
               <p className="mt-2 text-3xl font-semibold text-ink">{member.totalHealthRecordCount || 0}</p>
             </div>
             <div className="glass-panel rounded-[28px] p-6 shadow-glass">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">運動紀錄總數</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Workout Records</p>
               <p className="mt-2 text-3xl font-semibold text-ink">{member.totalExerciseLogCount || 0}</p>
             </div>
             <div className="glass-panel rounded-[28px] p-6 shadow-glass">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新體重</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Weight</p>
               <p className="mt-2 text-3xl font-semibold text-ink">
                 {formatMetric(dashboard?.cards?.latestWeight || member.latestMetrics?.weight, {
                   emptyLabel: "未填寫"
@@ -192,7 +192,7 @@ export default async function FamilyMemberDetailPage({ params }) {
               </p>
             </div>
             <div className="glass-panel rounded-[28px] p-6 shadow-glass">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新步數</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Steps</p>
               <p className="mt-2 text-3xl font-semibold text-ink">
                 {formatMetric(dashboard?.cards?.latestSteps || member.latestMetrics?.steps, {
                   emptyLabel: "未填寫"
@@ -236,13 +236,13 @@ export default async function FamilyMemberDetailPage({ params }) {
             <MetricHistoryChart
               items={stepsHistory}
               color="#34a853"
-              label="每日步數"
+              label="Daily Steps"
               unit="steps"
             />
             <MetricHistoryChart
               items={sleepHistory}
               color="#5c6ac4"
-              label="每日睡眠"
+              label="Daily Sleep"
               unit="hours"
             />
           </div>
@@ -250,32 +250,32 @@ export default async function FamilyMemberDetailPage({ params }) {
           <div className="glass-panel rounded-[28px] p-6 shadow-glass">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-500">更多圖表</p>
+                <p className="text-xs uppercase tracking-[0.24em] text-slate-500">More Charts</p>
                 <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">Apple Health Mini Charts</h3>
               </div>
               <p className="text-sm text-slate-500">看更多日常變化</p>
             </div>
             <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <MiniMetricChart items={stepsHistory} color="#34a853" label="步數" unit="steps" compact />
-              <MiniMetricChart items={sleepHistory} color="#5c6ac4" label="睡眠" unit="hours" compact />
+              <MiniMetricChart items={stepsHistory} color="#34a853" label="Steps" unit="steps" compact />
+              <MiniMetricChart items={sleepHistory} color="#5c6ac4" label="Sleep" unit="hours" compact />
               <MiniMetricChart
                 items={restingHeartRateHistory}
                 color="#ff6b57"
-                label="靜止心率"
+                label="Resting Heart Rate"
                 unit="bpm"
                 compact
               />
-              <MiniMetricChart items={heartRateHistory} color="#ff8a65" label="心率" unit="bpm" compact />
+              <MiniMetricChart items={heartRateHistory} color="#ff8a65" label="Heart Rate" unit="bpm" compact />
             </div>
           </div>
 
           <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="space-y-5">
               <div className="glass-panel rounded-[28px] p-6 shadow-glass">
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-500">身體指標</p>
+                <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Body Metrics</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
                   <div className="rounded-2xl bg-white/80 p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新身高</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Height</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(member.latestMetrics?.height, {
                         emptyLabel: "未填寫"
@@ -283,7 +283,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                     </p>
                   </div>
                   <div className="rounded-2xl bg-white/80 p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新靜止心率</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Resting HR</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(
                         dashboard?.cards?.latestRestingHeartRate || member.latestMetrics?.resting_heart_rate,
@@ -294,7 +294,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                     </p>
                   </div>
                   <div className="rounded-2xl bg-white/80 p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新睡眠</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Sleep</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(dashboard?.cards?.latestSleep || member.latestMetrics?.sleep, {
                         emptyLabel: "未填寫"
@@ -306,24 +306,24 @@ export default async function FamilyMemberDetailPage({ params }) {
 
               {dashboard?.trends ? (
                 <div className="glass-panel rounded-[28px] p-6 shadow-glass">
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">7 天 vs 30 天</p>
+                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">7 Days vs 30 Days</p>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <div className="rounded-2xl bg-white/80 p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">步數變化</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Steps Change</p>
                       <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.steps)}</p>
                     </div>
                     <div className="rounded-2xl bg-white/80 p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">睡眠變化</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Sleep Change</p>
                       <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.sleep)}</p>
                     </div>
                     <div className="rounded-2xl bg-white/80 p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">靜止心率變化</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Resting HR Change</p>
                       <p className="mt-1 font-semibold text-ink">
                         {formatDelta(dashboard.trends.restingHeartRate)}
                       </p>
                     </div>
                     <div className="rounded-2xl bg-white/80 p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">體重變化</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Weight Change</p>
                       <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.weight)}</p>
                     </div>
                   </div>
