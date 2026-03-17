@@ -19,6 +19,53 @@ export function getDefaultAppleHealthFolder() {
   return defaultAppleHealthFolder;
 }
 
+async function pathExists(targetPath) {
+  try {
+    await fs.access(targetPath);
+    return true;
+  } catch (_error) {
+    return false;
+  }
+}
+
+function buildFolderCandidates({ familyMemberId, memberName }) {
+  const candidates = new Set();
+  const normalizedId = String(familyMemberId || "").trim();
+  const normalizedName = String(memberName || "").trim();
+
+  if (normalizedName) {
+    candidates.add(normalizedName);
+  }
+
+  if (normalizedId) {
+    candidates.add(normalizedId);
+    candidates.add(normalizedId.charAt(0).toUpperCase() + normalizedId.slice(1));
+  }
+
+  if (normalizedId === "amelie") {
+    candidates.add("Emily");
+  }
+
+  return [...candidates];
+}
+
+export async function resolveAppleHealthFolderPath({
+  folderPath = defaultAppleHealthFolder,
+  familyMemberId,
+  memberName
+}) {
+  const candidates = buildFolderCandidates({ familyMemberId, memberName });
+
+  for (const candidate of candidates) {
+    const candidatePath = path.join(folderPath, candidate);
+    if (await pathExists(candidatePath)) {
+      return candidatePath;
+    }
+  }
+
+  return folderPath;
+}
+
 async function findLatestZipFile(folderPath) {
   const entries = await fs.readdir(folderPath, { withFileTypes: true });
   const zipFiles = await Promise.all(

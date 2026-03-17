@@ -621,9 +621,9 @@ function AppleHealthQuickGuide() {
           <p className="mt-2">
             把 <code>export.zip</code> 放到
             <span className="mx-1 rounded-full bg-white px-3 py-1 text-xs text-slate-600">
-              iCloud Drive/Apple Health/
+              iCloud Drive/Apple Health/&lt;成員名稱&gt;/
             </span>
-            ，先按預覽，再按正式匯入。
+            ，例如 Alex 會讀取 <code>Apple Health/Alex</code>，先按預覽，再按正式匯入。
           </p>
         </div>
         <div className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
@@ -645,6 +645,11 @@ export function ProfileManagementPanel({ member, growth }) {
     member.healthDataRecords?.find((record) => normalizeRecordCategory(record.category) === "weight")
       ?.value ||
     "";
+  const latestManualHeightRecord = (member.healthDataRecords || [])
+    .filter(
+      (record) => isManualRecord(record) && normalizeRecordCategory(record.category) === "height"
+    )
+    .sort((left, right) => new Date(right.recordedAt).getTime() - new Date(left.recordedAt).getTime())[0];
   const manualHealthRecords = (member.healthDataRecords || []).filter(isManualRecord);
   const tabs = [
     { id: "profile", label: "個人資料" },
@@ -673,6 +678,13 @@ export function ProfileManagementPanel({ member, growth }) {
     value: latestWeightValue ? String(latestWeightValue) : "",
     recordedAt: toDateTimeLocalValue(new Date().toISOString()),
     notes: ""
+  });
+  const [quickHeightForm, setQuickHeightForm] = useState({
+    value: latestManualHeightRecord?.value ? String(latestManualHeightRecord.value) : "",
+    recordedAt: latestManualHeightRecord
+      ? toDateTimeLocalValue(latestManualHeightRecord.recordedAt)
+      : toDateTimeLocalValue(new Date().toISOString()),
+    notes: latestManualHeightRecord?.notes || ""
   });
 
   const [newRecordForm, setNewRecordForm] = useState({
@@ -772,8 +784,8 @@ export function ProfileManagementPanel({ member, growth }) {
     setAppleHealthPreview(null);
     startAppleHealthJob(
       "preview-latest",
-      "正在讀取 iCloud Drive 最新匯出",
-      "系統正在尋找最新 zip、解壓 export.xml，並分析最近 30 日資料。"
+      `正在讀取 ${member.name} 的 iCloud Drive 匯出`,
+      `系統正在 ${member.name} 專屬資料夾中尋找最新 zip、解壓 export.xml，並分析最近 30 日資料。`
     );
 
     try {
@@ -781,15 +793,15 @@ export function ProfileManagementPanel({ member, growth }) {
       setAppleHealthPreview(preview);
       finishAppleHealthJob(
         "preview-latest",
-        "iCloud Drive 預覽完成",
+        `${member.name} 的 iCloud Drive 預覽完成`,
         "已完成分析，你可以先看數量，再決定要不要正式匯入。",
         preview
       );
     } catch (jobError) {
       failAppleHealthJob(
         "preview-latest",
-        "iCloud Drive 預覽失敗",
-        "系統未能完成最新 zip 預覽。",
+        `${member.name} 的 iCloud Drive 預覽失敗`,
+        "系統未能完成該成員資料夾的最新 zip 預覽。",
         jobError.message
       );
     }
@@ -799,23 +811,23 @@ export function ProfileManagementPanel({ member, growth }) {
     setAppleHealthPreview(null);
     startAppleHealthJob(
       "import-latest",
-      "正在自動匯入最新 zip",
-      "系統正在尋找最新 zip、過濾重複資料，然後把最近 30 日資料寫入 PostgreSQL。"
+      `正在匯入 ${member.name} 的最新 zip`,
+      `系統正在 ${member.name} 專屬資料夾中尋找最新 zip、過濾重複資料，然後把最近 30 日資料寫入 PostgreSQL。`
     );
 
     try {
       const result = await importLatestAppleHealth(member.id);
       finishAppleHealthJob(
         "import-latest",
-        "自動匯入完成",
+        `${member.name} 的自動匯入完成`,
         "Apple Health 最新 zip 已導入完成。確認結果後，再手動刷新頁面資料。",
         result
       );
     } catch (jobError) {
       failAppleHealthJob(
         "import-latest",
-        "自動匯入失敗",
-        "系統未能完成最新 zip 匯入。",
+        `${member.name} 的自動匯入失敗`,
+        "系統未能完成該成員資料夾的最新 zip 匯入。",
         jobError.message
       );
     }
@@ -941,71 +953,137 @@ export function ProfileManagementPanel({ member, growth }) {
         </SectionCard>
 
         {isAdult ? (
-          <SectionCard title="快速記錄體重" description="這裡可以直接補一筆最新體重，不用再走健康紀錄表單。">
-            <form
-              className="grid gap-4 md:grid-cols-2"
-              onSubmit={(event) => {
-                event.preventDefault();
-                runAction(
-                  async () => {
-                    await createHealthRecord(member.id, {
-                      category: "weight",
-                      value: quickWeightForm.value,
-                      unit: "kg",
-                      notes: quickWeightForm.notes,
-                      recordedAt: new Date(quickWeightForm.recordedAt).toISOString()
-                    });
-                    setQuickWeightForm({
-                      value: "",
-                      recordedAt: toDateTimeLocalValue(new Date().toISOString()),
-                      notes: ""
-                    });
-                  },
-                  "體重已記錄"
-                );
-              }}
-            >
-              <FieldLabel label="體重（kg）">
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  step="0.1"
-                  className={baseInputClass}
-                  value={quickWeightForm.value}
-                  onChange={(event) =>
-                    setQuickWeightForm((current) => ({ ...current, value: event.target.value }))
-                  }
-                />
-              </FieldLabel>
-              <FieldLabel label="記錄時間">
-                <input
-                  type="datetime-local"
-                  className={baseInputClass}
-                  value={quickWeightForm.recordedAt}
-                  onChange={(event) =>
-                    setQuickWeightForm((current) => ({
-                      ...current,
-                      recordedAt: event.target.value
-                    }))
-                  }
-                />
-              </FieldLabel>
-              <div className="md:col-span-2">
-                <FieldLabel label="備註">
-                  <input
-                    className={baseInputClass}
-                    placeholder="例如：早上量度"
-                    value={quickWeightForm.notes}
-                    onChange={(event) =>
-                      setQuickWeightForm((current) => ({ ...current, notes: event.target.value }))
-                    }
-                  />
-                </FieldLabel>
-              </div>
-              <div className="md:col-span-2">
-                <SubmitButton disabled={isSaving}>新增體重紀錄</SubmitButton>
-              </div>
-            </form>
+          <SectionCard title="身體資料" description="身高較少變動，可以在這裡設定；體重則可快速補一筆最新紀錄。">
+            <div className="grid gap-5 lg:grid-cols-2">
+              <form
+                className="rounded-[24px] border border-white/70 bg-white/70 p-5"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  runAction(
+                    async () => {
+                      const payload = {
+                        category: "height",
+                        value: quickHeightForm.value,
+                        unit: "cm",
+                        notes: quickHeightForm.notes,
+                        recordedAt: new Date(quickHeightForm.recordedAt).toISOString()
+                      };
+
+                      if (latestManualHeightRecord?.id) {
+                        await updateHealthRecord(member.id, latestManualHeightRecord.id, payload);
+                      } else {
+                        await createHealthRecord(member.id, payload);
+                      }
+                    },
+                    "身高設定已更新"
+                  );
+                }}
+              >
+                <p className="text-base font-semibold text-ink">身高設定</p>
+                <div className="mt-4 grid gap-4">
+                  <FieldLabel label="身高（cm）">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.1"
+                      className={baseInputClass}
+                      value={quickHeightForm.value}
+                      onChange={(event) =>
+                        setQuickHeightForm((current) => ({ ...current, value: event.target.value }))
+                      }
+                    />
+                  </FieldLabel>
+                  <FieldLabel label="記錄時間">
+                    <input
+                      type="datetime-local"
+                      className={baseInputClass}
+                      value={quickHeightForm.recordedAt}
+                      onChange={(event) =>
+                        setQuickHeightForm((current) => ({
+                          ...current,
+                          recordedAt: event.target.value
+                        }))
+                      }
+                    />
+                  </FieldLabel>
+                  <FieldLabel label="備註">
+                    <input
+                      className={baseInputClass}
+                      placeholder="例如：最新量度身高"
+                      value={quickHeightForm.notes}
+                      onChange={(event) =>
+                        setQuickHeightForm((current) => ({ ...current, notes: event.target.value }))
+                      }
+                    />
+                  </FieldLabel>
+                  <SubmitButton disabled={isSaving}>保存身高設定</SubmitButton>
+                </div>
+              </form>
+
+              <form
+                className="rounded-[24px] border border-white/70 bg-white/70 p-5"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  runAction(
+                    async () => {
+                      await createHealthRecord(member.id, {
+                        category: "weight",
+                        value: quickWeightForm.value,
+                        unit: "kg",
+                        notes: quickWeightForm.notes,
+                        recordedAt: new Date(quickWeightForm.recordedAt).toISOString()
+                      });
+                      setQuickWeightForm({
+                        value: "",
+                        recordedAt: toDateTimeLocalValue(new Date().toISOString()),
+                        notes: ""
+                      });
+                    },
+                    "體重已記錄"
+                  );
+                }}
+              >
+                <p className="text-base font-semibold text-ink">快速記錄體重</p>
+                <div className="mt-4 grid gap-4">
+                  <FieldLabel label="體重（kg）">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.1"
+                      className={baseInputClass}
+                      value={quickWeightForm.value}
+                      onChange={(event) =>
+                        setQuickWeightForm((current) => ({ ...current, value: event.target.value }))
+                      }
+                    />
+                  </FieldLabel>
+                  <FieldLabel label="記錄時間">
+                    <input
+                      type="datetime-local"
+                      className={baseInputClass}
+                      value={quickWeightForm.recordedAt}
+                      onChange={(event) =>
+                        setQuickWeightForm((current) => ({
+                          ...current,
+                          recordedAt: event.target.value
+                        }))
+                      }
+                    />
+                  </FieldLabel>
+                  <FieldLabel label="備註">
+                    <input
+                      className={baseInputClass}
+                      placeholder="例如：早上量度"
+                      value={quickWeightForm.notes}
+                      onChange={(event) =>
+                        setQuickWeightForm((current) => ({ ...current, notes: event.target.value }))
+                      }
+                    />
+                  </FieldLabel>
+                  <SubmitButton disabled={isSaving}>新增體重紀錄</SubmitButton>
+                </div>
+              </form>
+            </div>
           </SectionCard>
         ) : null}
       </div>

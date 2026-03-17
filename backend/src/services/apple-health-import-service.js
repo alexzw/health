@@ -6,7 +6,8 @@ import {
 } from "../integrations/apple-health-parser.js";
 import {
   extractAppleHealthXmlFromLatestZip,
-  getDefaultAppleHealthFolder
+  getDefaultAppleHealthFolder,
+  resolveAppleHealthFolderPath
 } from "../integrations/apple-health-zip.js";
 
 export class AppleHealthImportService {
@@ -91,7 +92,18 @@ export class AppleHealthImportService {
   }
 
   async previewLatestZip({ familyMemberId, folderPath }) {
-    const extraction = await extractAppleHealthXmlFromLatestZip(folderPath || getDefaultAppleHealthFolder());
+    const member = await this.familyMemberService.getFamilyMember(familyMemberId);
+
+    if (!member) {
+      throw new HttpError(404, "找不到要匯入的家庭成員");
+    }
+
+    const resolvedFolderPath = await resolveAppleHealthFolderPath({
+      folderPath: folderPath || getDefaultAppleHealthFolder(),
+      familyMemberId,
+      memberName: member.name
+    });
+    const extraction = await extractAppleHealthXmlFromLatestZip(resolvedFolderPath);
     let preview;
     const sinceDate = this.getDefaultSinceDate();
 
@@ -108,7 +120,7 @@ export class AppleHealthImportService {
     return {
       ...preview,
       source: {
-        folderPath: folderPath || getDefaultAppleHealthFolder(),
+        folderPath: resolvedFolderPath,
         zipPath: extraction.zipPath,
         exportXmlPath: extraction.exportXmlPath,
         sinceDate: sinceDate.toISOString()
@@ -117,7 +129,18 @@ export class AppleHealthImportService {
   }
 
   async importLatestZip({ familyMemberId, folderPath }) {
-    const extraction = await extractAppleHealthXmlFromLatestZip(folderPath || getDefaultAppleHealthFolder());
+    const member = await this.familyMemberService.getFamilyMember(familyMemberId);
+
+    if (!member) {
+      throw new HttpError(404, "找不到要匯入的家庭成員");
+    }
+
+    const resolvedFolderPath = await resolveAppleHealthFolderPath({
+      folderPath: folderPath || getDefaultAppleHealthFolder(),
+      familyMemberId,
+      memberName: member.name
+    });
+    const extraction = await extractAppleHealthXmlFromLatestZip(resolvedFolderPath);
     let result;
     const sinceDate = this.getDefaultSinceDate();
 
@@ -134,7 +157,7 @@ export class AppleHealthImportService {
     return {
       ...result,
       source: {
-        folderPath: folderPath || getDefaultAppleHealthFolder(),
+        folderPath: resolvedFolderPath,
         zipPath: extraction.zipPath,
         exportXmlPath: extraction.exportXmlPath,
         sinceDate: sinceDate.toISOString()
