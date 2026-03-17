@@ -148,6 +148,10 @@ export function CoachActionsPanel({ memberId, lang = "zh", goals = [] }) {
                       <p className="text-sm font-semibold text-ink">{goal.title}</p>
                       <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">{goal.cadence}</p>
                     </div>
+                    <div className="text-right">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "完成度", "Progress")}</p>
+                      <p className="mt-1 text-sm font-semibold text-ink">{goal.progressPercent ?? (draft.isCompleted ? 100 : 0)}%</p>
+                    </div>
                     <label className="flex items-center gap-2 text-sm text-slate-600">
                       <input
                         type="checkbox"
@@ -164,6 +168,18 @@ export function CoachActionsPanel({ memberId, lang = "zh", goals = [] }) {
                       />
                       {t(lang, "已完成", "Done")}
                     </label>
+                  </div>
+                  <div className="mt-4">
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                      <div
+                        className="h-full rounded-full bg-blue transition-all"
+                        style={{ width: `${goal.progressPercent ?? (draft.isCompleted ? 100 : 0)}%` }}
+                      />
+                    </div>
+                    <p className="mt-2 text-xs text-slate-500">
+                      {t(lang, "目前進度", "Current progress")}: {goal.currentValue ?? 0}
+                      {goal.unit ? ` / ${goal.targetValue} ${goal.unit}` : ` / ${goal.targetValue || 0}`}
+                    </p>
                   </div>
                   <div className="mt-4 grid gap-3 sm:grid-cols-[0.45fr_0.55fr]">
                     <label className="text-sm text-slate-500">

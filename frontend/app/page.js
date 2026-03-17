@@ -14,7 +14,7 @@ import {
   normalizeTimeRange
 } from "../lib/time-range";
 
-function buildTrendChange(items, unit, lang) {
+function buildTrendChangeWithRange(items, unit, lang, rangeLabel) {
   if (!items || items.length < 2) {
     return t(lang, "仍在累積趨勢資料", "Trend data is still building");
   }
@@ -24,13 +24,13 @@ function buildTrendChange(items, unit, lang) {
   const delta = Math.round((lastValue - firstValue) * 10) / 10;
 
   if (delta === 0) {
-    return t(lang, `與最近 30 天相若`, `Stable vs last 30 days`);
+    return t(lang, `與${rangeLabel}相若`, `Stable vs ${rangeLabel.toLowerCase()}`);
   }
 
   return t(
     lang,
-    `${delta > 0 ? "↑" : "↓"} ${formatValueWithUnit(Math.abs(delta), unit, { lang })} 對比最近 30 天`,
-    `${delta > 0 ? "↑" : "↓"} ${formatValueWithUnit(Math.abs(delta), unit, { lang })} vs last 30 days`
+    `${delta > 0 ? "↑" : "↓"} ${formatValueWithUnit(Math.abs(delta), unit, { lang })} 對比${rangeLabel}`,
+    `${delta > 0 ? "↑" : "↓"} ${formatValueWithUnit(Math.abs(delta), unit, { lang })} vs ${rangeLabel.toLowerCase()}`
   );
 }
 
@@ -100,6 +100,7 @@ export default async function HomePage({ searchParams }) {
   const amelieStepsTrend = buildMetricSeriesFromRecords(amelie?.healthDataRecords || [], "steps", range, "sum");
   const amelieSleepTrend = buildMetricSeriesFromRecords(amelie?.healthDataRecords || [], "sleep", range, "sum");
   const growthMeasurements = filterItemsByRange(growth?.measurements || [], range, (item) => item.measuredAt);
+  const rangeLabel = getTimeRangeLabel(range, lang);
   const latestGrowth = growth?.summary?.latestMeasurement || null;
   const growthGain = growth?.summary?.totalHeightGainCm ?? null;
   const homeInsights = [
@@ -214,10 +215,15 @@ export default async function HomePage({ searchParams }) {
                 emptyLabel: t(lang, "未有資料", "No data yet")
               })}
             </p>
-            <p className="mt-3 text-sm text-slate-600">{buildTrendChange(alexWeightTrend, "kg", lang)}</p>
+            <p className="mt-3 text-sm text-slate-600">{buildTrendChangeWithRange(alexWeightTrend, "kg", lang, rangeLabel)}</p>
             <p className="mt-2 text-sm text-slate-500">
               {buildMetricStatus(alexDashboard?.cards?.latestWeight || alex?.latestMetrics?.weight, lang)}
             </p>
+            <div className="mt-4">
+              <Link href="/family-members/alex#manage" className="button-secondary px-4 py-2 text-sm font-semibold">
+                {t(lang, "+ 新增體重", "+ Add Weight")}
+              </Link>
+            </div>
           </div>
           <div className="soft-card rounded-[30px] p-6">
             <p className="eyebrow-label">Amelie</p>
@@ -227,10 +233,18 @@ export default async function HomePage({ searchParams }) {
                 emptyLabel: t(lang, "未有資料", "No data yet")
               })}
             </p>
-            <p className="mt-3 text-sm text-slate-600">{buildTrendChange(amelieWeightTrend, "kg", lang)}</p>
+            <p className="mt-3 text-sm text-slate-600">{buildTrendChangeWithRange(amelieWeightTrend, "kg", lang, rangeLabel)}</p>
             <p className="mt-2 text-sm text-slate-500">
               {buildMetricStatus(amelieDashboard?.cards?.latestWeight || amelie?.latestMetrics?.weight, lang)}
             </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link href="/family-members/amelie#manage" className="button-secondary px-4 py-2 text-sm font-semibold">
+                {t(lang, "+ 新增體重", "+ Add Weight")}
+              </Link>
+              <Link href="/family-members/amelie#manage" className="button-secondary px-4 py-2 text-sm font-semibold">
+                {t(lang, "+ 新增運動", "+ Add Workout")}
+              </Link>
+            </div>
           </div>
           <div className="soft-card rounded-[30px] p-6 sm:col-span-2 xl:col-span-1">
             <p className="eyebrow-label">{t(lang, "今日活動", "Today Activity")}</p>
@@ -239,6 +253,11 @@ export default async function HomePage({ searchParams }) {
             <p className="mt-3 text-sm text-slate-500">
               {t(lang, "依 Apple Health 最新同步更新。", "Updated from the latest Apple Health sync.")}
             </p>
+            <div className="mt-4">
+              <Link href="/integrations" className="button-secondary px-4 py-2 text-sm font-semibold">
+                {t(lang, "同步 Apple Health", "Sync Apple Health")}
+              </Link>
+            </div>
           </div>
         </div>
       </div>

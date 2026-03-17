@@ -16,6 +16,7 @@ import { calculateBmi } from "../../../lib/bmi";
 import { formatChineseDate, formatMetric, formatRelativeDate, formatValueWithUnit } from "../../../lib/format";
 import { getCoachInsights, getFamilyMember, getGrowthTracking, getWeeklyGoals } from "../../../lib/api";
 import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../../../lib/i18n";
+import { enrichGoalsWithProgress } from "../../../lib/goal-progress";
 import {
   buildMetricSeriesFromRecords,
   filterItemsByRange,
@@ -146,6 +147,7 @@ export default async function FamilyMemberDetailPage({ params, searchParams }) {
         "先看最新身體指標，再往下查看趨勢、教練建議與記錄管理。",
         "Start with the latest health signals, then review trends, coaching, and record management."
       );
+  const goalsWithProgress = enrichGoalsWithProgress(weeklyGoals, member, growth);
 
   return (
     <section className="space-y-8">
@@ -254,7 +256,7 @@ export default async function FamilyMemberDetailPage({ params, searchParams }) {
       ) : null}
 
       {coach ? <SmartHealthCoach coach={coach} lang={lang} /> : null}
-      {coach ? <CoachActionsPanel memberId={member.id} lang={lang} goals={weeklyGoals} /> : null}
+      {coach ? <CoachActionsPanel memberId={member.id} lang={lang} goals={goalsWithProgress} /> : null}
 
       {member.familyRole !== "Child" ? (
         <div className="space-y-5">
