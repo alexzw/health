@@ -12,6 +12,7 @@ import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../
 import {
   buildFamilyHealthScore,
   buildHealthScoreBreakdown,
+  buildConsistencySignals,
   buildMemberHealthScores,
   buildMilestones,
   buildProactiveInsights,
@@ -127,6 +128,7 @@ export default async function HomePage({ searchParams }) {
   const familyHealthScore = buildFamilyHealthScore(engagementContext);
   const healthScoreBreakdown = buildHealthScoreBreakdown(engagementContext, lang);
   const memberHealthScores = buildMemberHealthScores(engagementContext, lang);
+  const consistencySignals = buildConsistencySignals(engagementContext, lang);
   const quickLogValues = {
     alexWeight: alex?.latestMetrics?.weight?.value || alexDashboard?.cards?.latestWeight?.value || null,
     amelieWeight: amelie?.latestMetrics?.weight?.value || amelieDashboard?.cards?.latestWeight?.value || null,
@@ -278,6 +280,23 @@ export default async function HomePage({ searchParams }) {
               <Link href="/integrations" className="button-secondary px-4 py-2 text-sm font-semibold">
                 {t(lang, "同步 Apple Health", "Sync Apple Health")}
               </Link>
+            </div>
+          </div>
+          <div className="soft-card rounded-[30px] p-6">
+            <p className="eyebrow-label">{t(lang, "連續記錄", "Consistency")}</p>
+            <div className="mt-4 grid gap-3">
+              {consistencySignals.map((item) => (
+                <div key={item.id} className="rounded-[20px] border border-slate-200 bg-white px-4 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-ink">{item.member}</p>
+                      <p className="mt-1 text-xs text-slate-500">{item.status}</p>
+                    </div>
+                    <p className="text-lg font-semibold text-blue">{item.streak}</p>
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-slate-500">{item.detail}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>

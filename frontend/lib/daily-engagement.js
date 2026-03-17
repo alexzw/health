@@ -24,6 +24,72 @@ function latestByCategory(records, category) {
     .sort((left, right) => new Date(right.recordedAt).getTime() - new Date(left.recordedAt).getTime())[0];
 }
 
+function startOfDay(dateValue) {
+  const date = new Date(dateValue);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function dateKey(dateValue) {
+  return startOfDay(dateValue).toISOString().slice(0, 10);
+}
+
+function daysBetween(left, right) {
+  return Math.round((startOfDay(left).getTime() - startOfDay(right).getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function getConsecutiveDayCount(dateValues = []) {
+  if (!dateValues.length) {
+    return 0;
+  }
+
+  const sortedDays = [...new Set(dateValues.map(dateKey))]
+    .map((value) => new Date(value))
+    .sort((left, right) => right.getTime() - left.getTime());
+
+  let streak = 1;
+  for (let index = 1; index < sortedDays.length; index += 1) {
+    const diff = daysBetween(sortedDays[index - 1], sortedDays[index]);
+    if (diff === 1) {
+      streak += 1;
+      continue;
+    }
+
+    break;
+  }
+
+  return streak;
+}
+
+function getConsecutiveWeekCount(dateValues = []) {
+  if (!dateValues.length) {
+    return 0;
+  }
+
+  const weekKeys = [...new Set(
+    dateValues.map((dateValue) => {
+      const date = new Date(dateValue);
+      const start = new Date(date);
+      start.setDate(date.getDate() - date.getDay());
+      return start.toISOString().slice(0, 10);
+    })
+  )]
+    .map((value) => new Date(value))
+    .sort((left, right) => right.getTime() - left.getTime());
+
+  let streak = 1;
+  for (let index = 1; index < weekKeys.length; index += 1) {
+    const diff = Math.round((weekKeys[index - 1].getTime() - weekKeys[index].getTime()) / (1000 * 60 * 60 * 24));
+    if (diff === 7) {
+      streak += 1;
+      continue;
+    }
+
+    break;
+  }
+
+  return streak;
+}
+
 export function buildFamilyHealthScore({ alex, amelie, growth }) {
   let score = 50;
 
@@ -217,6 +283,125 @@ export function buildMemberHealthScores({ alex, amelie, growth }, lang = "zh") {
         : t(lang, "仍等待新的身高體重記錄", "Waiting for the next height and weight check")
     }
   ];
+}
+
+export function buildConsistencySignals({ alex, amelie, growth }, lang = "zh") {
+  const alexWeightDates = (alex?.healthDataRecords || [])
+    .filter((record) => record.category === "weight")
+    .map((record) => record.recordedAt);
+  const amelieWeightDates = (amelie?.healthDataRecords || [])
+    .filter((record) => record.category === "weight")
+    .map((record) => record.recordedAt);
+  const growthDates = (growth?.measurements || []).map((entry) => entry.measuredAt);
+  const exerciseDates = [...(alex?.exerciseLogs || []), ...(amelie?.exerciseLogs || [])].map((entry) => entry.performedAt);
+
+  const alexWeightStreak = getConsecutiveDayCount(alexWeightDates);
+  const amelieWeightStreak = getConsecutiveDayCount(amelieWeightDates);
+  const growthWeekStreak = getConsecutiveWeekCount(growthDates);
+  const exerciseStreak = getConsecutiveDayCount(exerciseDates);
+  const recentGrowthLogged = recentItems(growth?.measurements || [], (entry) => entry.measuredAt, 7).length > 0;
+
+  return [
+    {
+      id: "alex-weight-streak",
+      member: "Alex",
+      kind: "weight",
+      streak: alexWeightStreak,
+      status:
+        alexWeightStreak >= 3
+          ? t(lang, "體重連續記錄中", "Weight logging is on a streak")
+          : t(lang, "可再穩定一點", "Could use steadier logging"),
+      detail:
+        alexWeightStreak > 0
+          ? t(lang, `連續 ${alexWeightStreak} 天有記錄`, `${alexWeightStreak} days logged in a row`)
+          : t(lang, "本週未有新體重記錄", "No recent weight logs this week")
+    },
+    {
+      id: "amelie-weight-streak",
+      member: "Amelie",
+      kind: "weight",
+      streak: amelieWeightStreak,
+      status:
+        amelieWeightStreak >= 3
+          ? t(lang, "體重連續記錄中", "Weight logging is on a streak")
+          : t(lang, "可再穩定一點", "Could use steadier logging"),
+      detail:
+        amelieWeightStreak > 0
+          ? t(lang, `連續 ${amelieWeightStreak} 天有記錄`, `${amelieWeightStreak} days logged in a row`)
+          : t(lang, "本週未有新體重記錄", "No recent weight logs this week")
+    },
+    {
+      id: "ryan-growth-streak",
+      member: "Ryan",
+      kind: "growth",
+      streak: growthWeekStreak,
+      status:
+        recentGrowthLogged
+          ? t(lang, "Ryan 本週已量度", "Ryan was measured this week")
+          : t(lang, "這週仍未量度", "No Ryan measurement yet this week"),
+      detail:
+        growthWeekStreak > 0
+          ? t(lang, `連續 ${growthWeekStreak} 週有成長記錄`, `${growthWeekStreak} weeks of growth tracking in a row`)
+          : t(lang, "仍未建立每週量度節奏", "A weekly measurement rhythm has not started yet")
+    },
+    {
+      id: "exercise-streak",
+      member: t(lang, "家庭", "Family"),
+      kind: "exercise",
+      streak: exerciseStreak,
+      status:
+        exerciseStreak >= 2
+          ? t(lang, "運動節奏有延續", "Exercise consistency is carrying over")
+          : t(lang, "可再補一點運動節奏", "The workout rhythm could use a lift"),
+      detail:
+        exerciseStreak > 0
+          ? t(lang, `連續 ${exerciseStreak} 天有運動記錄`, `${exerciseStreak} days with workouts in a row`)
+          : t(lang, "最近未有連續運動節奏", "No recent multi-day workout rhythm")
+    }
+  ];
+}
+
+export function buildMemberConsistency(member, growth, lang = "zh") {
+  if (member?.id === "ryan") {
+    const growthDates = (growth?.measurements || []).map((entry) => entry.measuredAt);
+    const streak = getConsecutiveWeekCount(growthDates);
+    const recentGrowthLogged = recentItems(growth?.measurements || [], (entry) => entry.measuredAt, 7).length > 0;
+
+    return {
+      title: t(lang, "成長量度節奏", "Growth Tracking Rhythm"),
+      status: recentGrowthLogged
+        ? t(lang, "Ryan 本週已量度", "Ryan was measured this week")
+        : t(lang, "這週仍未量度", "No Ryan measurement yet this week"),
+      detail:
+        streak > 0
+          ? t(lang, `連續 ${streak} 週有成長記錄`, `${streak} weeks of growth tracking in a row`)
+          : t(lang, "仍未建立每週量度節奏", "A weekly measurement rhythm has not started yet"),
+      streak,
+      accent: "emerald"
+    };
+  }
+
+  const weightDates = (member?.healthDataRecords || [])
+    .filter((record) => record.category === "weight")
+    .map((record) => record.recordedAt);
+  const workoutDates = (member?.exerciseLogs || []).map((entry) => entry.performedAt);
+  const weightStreak = getConsecutiveDayCount(weightDates);
+  const workoutStreak = getConsecutiveDayCount(workoutDates);
+
+  return {
+    title: t(lang, "連續記錄節奏", "Consistency Rhythm"),
+    status:
+      weightStreak >= 3
+        ? t(lang, "體重記錄有穩定延續", "Weight logging has a steady rhythm")
+        : t(lang, "體重記錄仍可再密一點", "Weight logging could be more consistent"),
+    detail: t(
+      lang,
+      `體重連續 ${weightStreak || 0} 天，運動連續 ${workoutStreak || 0} 天`,
+      `${weightStreak || 0} days of weight logs, ${workoutStreak || 0} days of workouts`
+    ),
+    streak: Math.max(weightStreak, workoutStreak),
+    accent: "blue"
+  };
 }
 
 export function buildMilestones({ alex, amelie, growth }, lang = "zh") {

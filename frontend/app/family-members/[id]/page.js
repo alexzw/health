@@ -17,7 +17,7 @@ import { formatChineseDate, formatMetric, formatRelativeDate, formatValueWithUni
 import { getCoachInsights, getFamilyMember, getGrowthTracking, getWeeklyGoals } from "../../../lib/api";
 import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../../../lib/i18n";
 import { enrichGoalsWithProgress } from "../../../lib/goal-progress";
-import { buildMemberHealthScores, buildMemberScoreBreakdown } from "../../../lib/daily-engagement";
+import { buildMemberConsistency, buildMemberHealthScores, buildMemberScoreBreakdown } from "../../../lib/daily-engagement";
 import {
   buildMetricSeriesFromRecords,
   filterItemsByRange,
@@ -158,6 +158,7 @@ export default async function FamilyMemberDetailPage({ params, searchParams }) {
     lang
   ).find((item) => item.id === member.id);
   const memberScoreBreakdown = buildMemberScoreBreakdown({ member, growth, lang });
+  const memberConsistency = buildMemberConsistency(member, growth, lang);
 
   return (
     <section className="space-y-8">
@@ -230,6 +231,23 @@ export default async function FamilyMemberDetailPage({ params, searchParams }) {
                 ))}
               </div>
             ) : null}
+          </div>
+        ) : null}
+        {memberConsistency ? (
+          <div className="mt-4 rounded-[26px] border border-white/70 bg-white/75 p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="section-kicker">{memberConsistency.title}</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">
+                  {memberConsistency.status}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{memberConsistency.detail}</p>
+              </div>
+              <div className="metric-band rounded-[22px] px-5 py-4 text-center">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "目前 streak", "Current streak")}</p>
+                <p className="mt-2 text-3xl font-semibold text-ink">{memberConsistency.streak}</p>
+              </div>
+            </div>
           </div>
         ) : null}
         <div className="mt-6 flex flex-wrap items-center gap-3">
