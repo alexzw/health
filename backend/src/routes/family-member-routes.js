@@ -7,6 +7,7 @@ export function createFamilyMemberRoutes(service) {
 
   router.get("/", controller.list);
   router.get("/:id/growth-tracking", controller.getGrowthTracking);
+  router.get("/:id/coach-insights", controller.getCoachInsights);
   router.get("/:id", controller.getById);
   router.patch("/:id", controller.updateById);
   router.post("/:id/health-records", controller.createHealthRecord);

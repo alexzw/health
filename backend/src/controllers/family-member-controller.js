@@ -40,6 +40,22 @@ export function createFamilyMemberController(service) {
         next(error);
       }
     },
+    getCoachInsights: async (request, response, next) => {
+      try {
+        const coachInsights = await service.getCoachInsights(request.params.id, request.query.lang || "zh");
+
+        if (!coachInsights) {
+          response.status(404).json({
+            error: "Family member not found"
+          });
+          return;
+        }
+
+        response.json({ data: coachInsights });
+      } catch (error) {
+        next(error);
+      }
+    },
     updateById: async (request, response, next) => {
       try {
         const member = await service.updateFamilyMember(request.params.id, request.body);

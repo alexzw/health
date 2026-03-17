@@ -35,6 +35,14 @@ export async function getGrowthTracking(id) {
   return payload.data;
 }
 
+export async function getCoachInsights(id, lang = "zh") {
+  const response = await fetch(`${API_BASE_URL}/family-members/${id}/coach-insights?lang=${encodeURIComponent(lang)}`, {
+    cache: "no-store"
+  });
+  const payload = await handleResponse(response);
+  return payload.data;
+}
+
 export async function updateFamilyMember(id, body) {
   const response = await fetch(`${API_BASE_URL}/family-members/${id}`, {
     method: "PATCH",

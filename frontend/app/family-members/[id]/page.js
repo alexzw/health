@@ -8,9 +8,10 @@ import { HealthRecordTable } from "../../../components/health-record-table";
 import { MetricHistoryChart } from "../../../components/metric-history-chart";
 import { MiniMetricChart } from "../../../components/mini-metric-chart";
 import { ProfileManagementPanel } from "../../../components/profile-management-panel";
+import { SmartHealthCoach } from "../../../components/smart-health-coach";
 import { calculateBmi } from "../../../lib/bmi";
 import { formatChineseDate, formatMetric, formatValueWithUnit } from "../../../lib/format";
-import { getFamilyMember, getGrowthTracking } from "../../../lib/api";
+import { getCoachInsights, getFamilyMember, getGrowthTracking } from "../../../lib/api";
 import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../../../lib/i18n";
 
 function pickSecondaryTrend(metricTrends = {}) {
@@ -66,9 +67,11 @@ export default async function FamilyMemberDetailPage({ params }) {
   let member;
   let growth = null;
   let bmi = null;
+  let coach = null;
 
   try {
     member = await getFamilyMember(resolvedParams.id);
+    coach = await getCoachInsights(resolvedParams.id, lang);
     bmi = member.latestBmi;
 
     if (resolvedParams.id === "ryan") {
@@ -181,6 +184,8 @@ export default async function FamilyMemberDetailPage({ params }) {
           )}
         </div>
       ) : null}
+
+      {coach ? <SmartHealthCoach coach={coach} lang={lang} /> : null}
 
       {member.familyRole !== "Child" ? (
         <div className="space-y-5">

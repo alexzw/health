@@ -3,6 +3,7 @@ import { calculateBmi, findLatestMetric } from "../lib/body-metrics.js";
 import { analyzeGrowthMeasurements } from "../lib/growth.js";
 import { buildHealthDashboardSummary } from "../lib/health-dashboard.js";
 import { HttpError } from "../lib/http-error.js";
+import { HealthCoachService } from "./health-coach-service.js";
 
 function normalizeIsoDate(value) {
   const date = new Date(value);
@@ -88,6 +89,7 @@ function parseOptionalNumber(value, fieldName) {
 export class FamilyMemberService {
   constructor(repository) {
     this.repository = repository;
+    this.healthCoachService = new HealthCoachService(this);
   }
 
   async listFamilyMembers() {
@@ -139,6 +141,10 @@ export class FamilyMemberService {
       member: presentMember(member),
       ...analyzeGrowthMeasurements(effectiveGrowth)
     };
+  }
+
+  async getCoachInsights(id, lang = "zh") {
+    return this.healthCoachService.getCoachInsights(id, lang);
   }
 
   async updateFamilyMember(id, updates) {
