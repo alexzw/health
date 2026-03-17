@@ -19,7 +19,14 @@ export function createApp() {
   app.use(helmet());
   app.use(
     cors({
-      origin: env.corsOrigin
+      origin(origin, callback) {
+        if (!origin || env.corsOrigins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+
+        callback(new Error("CORS origin not allowed"));
+      }
     })
   );
   app.use(express.json());
