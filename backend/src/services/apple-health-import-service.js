@@ -1,4 +1,6 @@
 import { HttpError } from "../lib/http-error.js";
+import { fork } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { splitDuplicates } from "../lib/apple-health-dedupe.js";
 import {
   parseAppleHealthExport,
@@ -86,26 +88,12 @@ export class AppleHealthImportService {
       importScope
     });
 
-    queueMicrotask(async () => {
-      this.updateJob(job.id, { status: "running" });
-
-      try {
-        const result =
-          mode === "preview"
-            ? await this.previewLatestZip({ familyMemberId, folderPath, importScope })
-            : await this.importLatestZip({ familyMemberId, folderPath, importScope });
-
-        this.updateJob(job.id, {
-          status: "completed",
-          result,
-          error: ""
-        });
-      } catch (error) {
-        this.updateJob(job.id, {
-          status: "failed",
-          error: error.message || "Apple Health 工作失敗"
-        });
-      }
+    this.runLatestZipJobInChild({
+      jobId: job.id,
+      familyMemberId,
+      folderPath,
+      importScope,
+      mode
     });
 
     return {
@@ -116,6 +104,56 @@ export class AppleHealthImportService {
       memberName: member.name,
       importScope: job.importScope
     };
+  }
+
+  runLatestZipJobInChild({ jobId, familyMemberId, folderPath, importScope, mode }) {
+    const workerPath = fileURLToPath(new URL("../workers/apple-health-latest-job.js", import.meta.url));
+    const child = fork(workerPath, [], {
+      stdio: ["ignore", "ignore", "ignore", "ipc"]
+    });
+
+    this.updateJob(jobId, { status: "running" });
+
+    child.on("message", (message) => {
+      if (!message || message.jobId !== jobId) {
+        return;
+      }
+
+      if (message.type === "success") {
+        this.updateJob(jobId, {
+          status: "completed",
+          result: message.result,
+          error: ""
+        });
+      }
+
+      if (message.type === "error") {
+        this.updateJob(jobId, {
+          status: "failed",
+          error: message.error || "Apple Health 工作失敗"
+        });
+      }
+    });
+
+    child.on("exit", (code) => {
+      const job = this.jobs.get(jobId);
+      if (!job || job.status === "completed" || job.status === "failed") {
+        return;
+      }
+
+      this.updateJob(jobId, {
+        status: "failed",
+        error: code === 0 ? "Apple Health 工作已結束但沒有回傳結果" : "Apple Health 工作意外中斷"
+      });
+    });
+
+    child.send({
+      jobId,
+      familyMemberId,
+      folderPath: folderPath || null,
+      importScope,
+      mode
+    });
   }
 
   async previewFile({ familyMemberId, xmlString }) {
