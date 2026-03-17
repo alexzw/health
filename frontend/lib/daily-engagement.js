@@ -1,4 +1,5 @@
 import { formatMetric, formatValueWithUnit } from "./format";
+import { t } from "./i18n";
 
 function recentItems(items, getDate, days) {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
@@ -86,29 +87,104 @@ export function buildHealthScoreBreakdown({ alex, amelie, growth }, lang = "zh")
   ];
 }
 
+function buildMemberScore(value, workoutCount, maxStepScore, maxWorkoutScore) {
+  const stepScore = Math.min(maxStepScore, Math.round(value / 1500));
+  const workoutScore = Math.min(maxWorkoutScore, workoutCount * 3);
+  return Math.max(0, Math.min(100, 45 + stepScore * 2 + workoutScore * 2));
+}
+
+export function buildMemberHealthScores({ alex, amelie, growth }, lang = "zh") {
+  const alexSteps = Number(alex?.dashboard?.cards?.latestSteps?.value || 0);
+  const amelieSteps = Number(amelie?.dashboard?.cards?.latestSteps?.value || 0);
+  const alexWorkouts = recentItems(alex?.exerciseLogs || [], (entry) => entry.performedAt, 7).length;
+  const amelieWorkouts = recentItems(amelie?.exerciseLogs || [], (entry) => entry.performedAt, 7).length;
+  const growthStatus = growth?.summary?.status;
+  const latestGrowth = growth?.summary?.latestMeasurement;
+
+  return [
+    {
+      id: "alex",
+      name: "Alex",
+      score: buildMemberScore(alexSteps, alexWorkouts, 14, 8),
+      status:
+        alexWorkouts >= 3
+          ? t(lang, "本週節奏穩定", "Strong weekly consistency")
+          : t(lang, "本週還差一點運動節奏", "Needs one more workout push"),
+      detail:
+        lang === "en"
+          ? `${formatValueWithUnit(alexSteps, "steps", { lang })} and ${alexWorkouts} workouts this week`
+          : `${formatValueWithUnit(alexSteps, "steps", { lang })}，本週 ${alexWorkouts} 次運動`
+    },
+    {
+      id: "amelie",
+      name: "Amelie",
+      score: buildMemberScore(amelieSteps, amelieWorkouts, 14, 8),
+      status:
+        amelieWorkouts >= 3
+          ? t(lang, "塑形節奏正在建立", "Body-shaping rhythm is building")
+          : t(lang, "本週可再補一節訓練", "One more training session would help"),
+      detail:
+        lang === "en"
+          ? `${formatValueWithUnit(amelieSteps, "steps", { lang })} and ${amelieWorkouts} workouts this week`
+          : `${formatValueWithUnit(amelieSteps, "steps", { lang })}，本週 ${amelieWorkouts} 次運動`
+    },
+    {
+      id: "ryan",
+      name: "Ryan",
+      score: growthStatus === "on_track" ? 88 : 68,
+      status:
+        growthStatus === "on_track"
+          ? t(lang, "成長趨勢穩定", "Growth is tracking well")
+          : t(lang, "建議增加量度頻率", "Needs closer follow-up"),
+      detail: latestGrowth
+        ? lang === "en"
+          ? `Latest: ${latestGrowth.heightCm} cm and ${latestGrowth.weightKg} kg`
+          : `最新：${latestGrowth.heightCm} cm，${latestGrowth.weightKg} kg`
+        : t(lang, "仍等待新的身高體重記錄", "Waiting for the next height and weight check")
+    }
+  ];
+}
+
 export function buildMilestones({ alex, amelie, growth }, lang = "zh") {
   const milestones = [];
+  const latestGrowthDate = growth?.summary?.latestMeasurement?.measuredAt || null;
 
   if (growth?.summary?.latestMeasurement?.heightCm >= 120) {
-    milestones.push({
-      title: lang === "en" ? "Ryan reached 120 cm" : "Ryan 達到 120 cm",
-      detail: lang === "en" ? "A new growth milestone worth celebrating." : "這是一個值得記錄的成長里程碑。"
-    });
+      milestones.push({
+        id: "ryan-120cm",
+        member: "Ryan",
+        type: "growth",
+        typeLabel: t(lang, "成長", "Growth"),
+        achievedAt: latestGrowthDate,
+        title: lang === "en" ? "Ryan reached 120 cm" : "Ryan 達到 120 cm",
+        detail: lang === "en" ? "A new growth milestone worth celebrating." : "這是一個值得記錄的成長里程碑。"
+      });
   }
 
   const alexWeightLoss = Number(alex?.dashboard?.trends?.weight?.delta || 0);
   if (alexWeightLoss <= -5) {
-    milestones.push({
-      title: lang === "en" ? "Alex lost 5 kg" : "Alex 減去 5 kg",
-      detail: lang === "en" ? "A major weight milestone has been reached." : "這是一個重要的減重里程碑。"
-    });
+      milestones.push({
+        id: "alex-5kg",
+        member: "Alex",
+        type: "weight",
+        typeLabel: t(lang, "體重", "Weight"),
+        achievedAt: alex?.latestMetrics?.weight?.recordedAt || null,
+        title: lang === "en" ? "Alex lost 5 kg" : "Alex 減去 5 kg",
+        detail: lang === "en" ? "A major weight milestone has been reached." : "這是一個重要的減重里程碑。"
+      });
   }
 
   const amelieWorkouts = recentItems(amelie?.exerciseLogs || [], (entry) => entry.performedAt, 30).length;
   if (amelieWorkouts >= 5) {
-    milestones.push({
-      title: lang === "en" ? "Amelie completed 5 workouts" : "Amelie 完成 5 次運動",
-      detail: lang === "en" ? "Workout consistency is building momentum." : "穩定運動的節奏已開始建立。"
+      milestones.push({
+        id: "amelie-5-workouts",
+        member: "Amelie",
+        type: "workout",
+        typeLabel: t(lang, "運動", "Workout"),
+        achievedAt: [...(amelie?.exerciseLogs || [])]
+        .sort((left, right) => new Date(right.performedAt).getTime() - new Date(left.performedAt).getTime())[0]?.performedAt || null,
+        title: lang === "en" ? "Amelie completed 5 workouts" : "Amelie 完成 5 次運動",
+        detail: lang === "en" ? "Workout consistency is building momentum." : "穩定運動的節奏已開始建立。"
     });
   }
 
@@ -121,6 +197,10 @@ export function buildReminders({ alex, amelie, growth }, lang = "zh") {
   const alexWorkoutGap = recentItems(alex?.exerciseLogs || [], (entry) => entry.performedAt, 3).length;
   if (!alexWorkoutGap) {
     reminders.push({
+      id: "alex-workout-gap",
+      member: "Alex",
+      ctaHref: "/family-members/alex#manage",
+      ctaLabel: t(lang, "記錄運動", "Log workout"),
       title: lang === "en" ? "Alex has not exercised for 3 days" : "Alex 已 3 天沒有運動",
       detail: lang === "en" ? "A short workout can help maintain momentum." : "補一節短運動可以幫助維持節奏。"
     });
@@ -129,6 +209,10 @@ export function buildReminders({ alex, amelie, growth }, lang = "zh") {
   const amelieWorkoutGap = recentItems(amelie?.exerciseLogs || [], (entry) => entry.performedAt, 3).length;
   if (!amelieWorkoutGap) {
     reminders.push({
+      id: "amelie-workout-gap",
+      member: "Amelie",
+      ctaHref: "/family-members/amelie#manage",
+      ctaLabel: t(lang, "新增運動", "Add workout"),
       title: lang === "en" ? "Amelie has not exercised for 3 days" : "Amelie 已 3 天沒有運動",
       detail: lang === "en" ? "A light session is enough to restart consistency." : "一節輕量運動已足夠重新啟動節奏。"
     });
@@ -137,6 +221,10 @@ export function buildReminders({ alex, amelie, growth }, lang = "zh") {
   const recentGrowth = recentItems(growth?.measurements || [], (entry) => entry.measuredAt, 7).length;
   if (!recentGrowth) {
     reminders.push({
+      id: "ryan-growth-gap",
+      member: "Ryan",
+      ctaHref: "/family-members/ryan#manage-growth",
+      ctaLabel: t(lang, "新增量度", "Add measurement"),
       title: lang === "en" ? "Ryan has no new growth record this week" : "Ryan 本週沒有新的成長記錄",
       detail: lang === "en" ? "A fresh height and weight check will improve the growth view." : "補一筆身高體重資料會令成長分析更準確。"
     });
@@ -202,7 +290,11 @@ export function buildWeeklyAiSummary({ alex, amelie, growth }, lang = "zh") {
       { member: "Ryan", text: ryanText },
       { member: "Alex", text: alexText },
       { member: "Amelie", text: amelieText }
-    ]
+    ],
+    shareText:
+      lang === "en"
+        ? `Family Health Report\n\n${ryanText}\n${alexText}\n${amelieText}\n\nRecommended focus:\n- Keep Ryan's measurements regular.\n- Protect workout consistency for both adults.\n- Use reminders as action prompts, not pressure.`
+        : `家庭健康週報\n\n${ryanText}\n${alexText}\n${amelieText}\n\n本週建議：\n- 保持 Ryan 的量度節奏穩定。\n- 兩位大人都要維持運動一致性。\n- 把提醒當成行動提示，而唔係壓力。`
   };
 }
 

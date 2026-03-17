@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { getFamilyMember, getGrowthTracking } from "../../lib/api";
 import { LANGUAGE_COOKIE, normalizeLanguage, t } from "../../lib/i18n";
 import { buildMilestones } from "../../lib/daily-engagement";
+import { MilestoneTimeline } from "../../components/milestone-timeline";
 
 export const metadata = {
   title: "Milestones | Family Health Tracker"
@@ -36,30 +37,7 @@ export default async function MilestonesPage() {
         </p>
       </div>
 
-      <div className="grid gap-6">
-        {milestones.length ? (
-          milestones.map((milestone, index) => (
-            <div key={milestone.title} className="soft-card rounded-[30px] p-6">
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-lg font-semibold text-white">
-                  {index + 1}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    {t(lang, "Milestone", "Milestone")}
-                  </p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">{milestone.title}</h2>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">{milestone.detail}</p>
-                </div>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="soft-card rounded-[30px] p-6 text-sm text-slate-600">
-            {t(lang, "當家庭累積更多進步，這裡會開始出現 milestone timeline。", "As your family builds more progress, a milestone timeline will start appearing here.")}
-          </div>
-        )}
-      </div>
+      <MilestoneTimeline milestones={milestones} lang={lang} />
 
       <div className="flex flex-wrap gap-3">
         <Link href="/" className="button-primary px-5 py-3 text-sm font-semibold">

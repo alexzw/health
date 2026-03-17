@@ -5,6 +5,7 @@ import { formatMetric, formatValueWithUnit } from "../../lib/format";
 import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../../lib/i18n";
 import { buildWeeklyAiSummary } from "../../lib/daily-engagement";
 import { buildMetricSeriesFromRecords } from "../../lib/time-range";
+import { ReportActions } from "../../components/report-actions";
 
 export const metadata = {
   title: "Family Health Report | Family Health Tracker"
@@ -71,6 +72,9 @@ export default async function ReportsPage() {
           {t(lang, "可分享的每週解讀", "Shareable Weekly Narrative")}
         </h2>
         <p className="mt-4 text-base leading-7 text-slate-700">{weeklyAiSummary.headline}</p>
+        <div className="mt-5">
+          <ReportActions shareText={weeklyAiSummary.shareText} lang={lang} />
+        </div>
         <div className="mt-5 grid gap-4 xl:grid-cols-3">
           {weeklyAiSummary.memberSummaries.map((item) => (
             <div key={item.member} className="rounded-[22px] bg-slate-50 px-4 py-4">

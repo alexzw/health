@@ -11,6 +11,7 @@ import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../
 import {
   buildFamilyHealthScore,
   buildHealthScoreBreakdown,
+  buildMemberHealthScores,
   buildMilestones,
   buildProactiveInsights,
   buildReminders,
@@ -124,6 +125,7 @@ export default async function HomePage({ searchParams }) {
   const milestones = buildMilestones(engagementContext, lang);
   const familyHealthScore = buildFamilyHealthScore(engagementContext);
   const healthScoreBreakdown = buildHealthScoreBreakdown(engagementContext, lang);
+  const memberHealthScores = buildMemberHealthScores(engagementContext, lang);
 
   const profileCards = [
     {
@@ -231,6 +233,26 @@ export default async function HomePage({ searchParams }) {
                   <p className="mt-2 text-xs leading-5 text-slate-500">{item.detail}</p>
                 </div>
               ))}
+            </div>
+            <div className="mt-5 border-t border-slate-200 pt-5">
+              <p className="text-sm font-semibold text-ink">{t(lang, "成員分數", "Member Scores")}</p>
+              <div className="mt-3 grid gap-3">
+                {memberHealthScores.map((member) => (
+                  <div key={member.id} className="rounded-[20px] border border-slate-200 bg-white px-4 py-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-ink">{member.name}</p>
+                        <p className="mt-1 text-xs leading-5 text-slate-500">{member.status}</p>
+                      </div>
+                      <p className="text-lg font-semibold text-blue">{member.score}</p>
+                    </div>
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+                      <div className="h-full rounded-full bg-blue" style={{ width: `${member.score}%` }} />
+                    </div>
+                    <p className="mt-3 text-xs leading-5 text-slate-500">{member.detail}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <div className="soft-card rounded-[30px] p-6">
