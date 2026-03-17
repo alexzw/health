@@ -28,7 +28,8 @@ export function createAppleHealthController(service) {
       try {
         const result = await service.previewLatestZip({
           familyMemberId: request.body.familyMemberId,
-          folderPath: request.body.folderPath
+          folderPath: request.body.folderPath,
+          importScope: request.body.importScope
         });
 
         response.json({ data: result });
@@ -40,7 +41,8 @@ export function createAppleHealthController(service) {
       try {
         const result = await service.importLatestZip({
           familyMemberId: request.body.familyMemberId,
-          folderPath: request.body.folderPath
+          folderPath: request.body.folderPath,
+          importScope: request.body.importScope
         });
 
         response.status(201).json({ data: result });

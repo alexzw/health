@@ -571,6 +571,12 @@ function ActionButton({ children, disabled, onClick, variant = "primary" }) {
   );
 }
 
+function importScopeLabel(scope, lang = "zh") {
+  return scope === "all"
+    ? t(lang, "全部資料", "All data")
+    : t(lang, "最近 30 天", "Last 30 days");
+}
+
 function ManagementIntro({ title, description, status, lang }) {
   return (
     <div className="rounded-[32px] border border-white/70 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(240,247,255,0.94))] p-6 shadow-glass">
@@ -616,18 +622,20 @@ function AppleHealthWorkflowCard({ job, onRefreshPage, lang = "zh" }) {
     return null;
   }
 
+  const scopeLabel = importScopeLabel(job.result?.source?.importScope || job.importScope || "30d", lang);
+
   const steps =
     job.kind === "preview-latest"
       ? [
           t(lang, "尋找 iCloud Drive 最新 zip", "Find the latest iCloud Drive zip"),
           t(lang, "解壓 export.xml", "Extract export.xml"),
-          t(lang, "分析最近 30 日資料", "Analyze the last 30 days of data")
+          t(lang, `分析${scopeLabel}`, `Analyze ${scopeLabel.toLowerCase()}`)
         ]
       : job.kind === "import-latest"
         ? [
             t(lang, "尋找 iCloud Drive 最新 zip", "Find the latest iCloud Drive zip"),
             t(lang, "解壓 export.xml", "Extract export.xml"),
-            t(lang, "寫入 PostgreSQL", "Write to PostgreSQL")
+            t(lang, `把${scopeLabel}寫入 PostgreSQL`, `Write ${scopeLabel.toLowerCase()} to PostgreSQL`)
           ]
         : job.kind === "preview-file"
           ? [
@@ -735,8 +743,9 @@ function AppleHealthWorkflowCard({ job, onRefreshPage, lang = "zh" }) {
               <p>{t(lang, "讀取資料夾：", "Folder:")}{job.result.source.folderPath}</p>
               <p className="mt-1">{t(lang, "zip 檔名：", "Zip file:")}{basename(job.result.source.zipPath)}</p>
               <p className="mt-1">{t(lang, "來源 zip：", "Source zip:")}{job.result.source.zipPath}</p>
+              <p className="mt-1">{t(lang, "匯入範圍：", "Import range:")}{importScopeLabel(job.result.source.importScope || "30d", lang)}</p>
               {job.result.source.sinceDate ? (
-                <p className="mt-1">{t(lang, "同步範圍：", "Sync window:")}{formatChineseDate(job.result.source.sinceDate, false, lang)} {t(lang, "之後", "onwards")}</p>
+                <p className="mt-1">{t(lang, "同步起點：", "Sync start:")}{formatChineseDate(job.result.source.sinceDate, false, lang)}</p>
               ) : null}
             </div>
           ) : null}
@@ -793,6 +802,7 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
   const [appleHealthFile, setAppleHealthFile] = useState(null);
   const [appleHealthPreview, setAppleHealthPreview] = useState(null);
   const [appleHealthJob, setAppleHealthJob] = useState(null);
+  const [appleHealthImportScope, setAppleHealthImportScope] = useState("30d");
 
   const [profileForm, setProfileForm] = useState({
     name: member.name,
@@ -897,6 +907,7 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
     setAppleHealthJob({
       kind,
       phase: "running",
+      importScope: appleHealthImportScope,
       title,
       description,
       result: null,
@@ -931,11 +942,13 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
     startAppleHealthJob(
       "preview-latest",
       `正在讀取 ${member.name} 的 iCloud Drive 匯出`,
-      `系統正在 ${member.name} 專屬資料夾中尋找最新 zip、解壓 export.xml，並分析最近 30 日資料。`
+      appleHealthImportScope === "all"
+        ? `系統正在 ${member.name} 專屬資料夾中尋找最新 zip、解壓 export.xml，並分析整份資料。`
+        : `系統正在 ${member.name} 專屬資料夾中尋找最新 zip、解壓 export.xml，並分析最近 30 日資料。`
     );
 
     try {
-      const preview = await previewLatestAppleHealthImport(member.id);
+      const preview = await previewLatestAppleHealthImport(member.id, undefined, appleHealthImportScope);
       setAppleHealthPreview(preview);
       finishAppleHealthJob(
         "preview-latest",
@@ -958,11 +971,13 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
     startAppleHealthJob(
       "import-latest",
       `正在匯入 ${member.name} 的最新 zip`,
-      `系統正在 ${member.name} 專屬資料夾中尋找最新 zip、過濾重複資料，然後把最近 30 日資料寫入 PostgreSQL。`
+      appleHealthImportScope === "all"
+        ? `系統正在 ${member.name} 專屬資料夾中尋找最新 zip、過濾重複資料，然後把整份資料寫入 PostgreSQL。`
+        : `系統正在 ${member.name} 專屬資料夾中尋找最新 zip、過濾重複資料，然後把最近 30 日資料寫入 PostgreSQL。`
     );
 
     try {
-      const result = await importLatestAppleHealth(member.id);
+      const result = await importLatestAppleHealth(member.id, undefined, appleHealthImportScope);
       finishAppleHealthJob(
         "import-latest",
         `${member.name} 的自動匯入完成`,
@@ -1832,10 +1847,32 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
           tone="accent"
         >
           <div className="grid gap-4 md:grid-cols-2">
+            <div className="md:col-span-2 rounded-2xl bg-white/80 p-5">
+              <p className="text-base font-semibold text-ink">{t(lang, "匯入範圍", "Import Range")}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {t(lang, "可選擇只同步最近 30 天，或者一次匯入整份 Apple Health 匯出資料。", "Choose whether to sync only the last 30 days or import the full Apple Health export in one pass.")}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                {[
+                  { value: "30d", label: t(lang, "最近 30 天", "Last 30 days") },
+                  { value: "all", label: t(lang, "全部資料", "All data") }
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    disabled={isAppleHealthBusy}
+                    className={tabButtonClass(appleHealthImportScope === option.value)}
+                    onClick={() => setAppleHealthImportScope(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="rounded-2xl bg-slate-50 p-5">
               <p className="text-base font-semibold text-ink">{t(lang, "第 1 步：先做預覽", "Step 1: Preview first")}</p>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                {t(lang, "先掃描 iCloud Drive 最新 zip，看看會新增多少資料。", "Scan the latest iCloud Drive zip first to see what would be added.")}
+                {t(lang, "先掃描 iCloud Drive 最新 zip，看看這個範圍內會新增多少資料。", "Scan the latest iCloud Drive zip first to see what would be added in this range.")}
               </p>
               <div className="mt-4">
                 <ActionButton disabled={isAppleHealthBusy} onClick={handleAppleHealthPreviewLatest}>
@@ -1848,7 +1885,9 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
             <div className="rounded-2xl bg-slate-50 p-5">
               <p className="text-base font-semibold text-ink">{t(lang, "第 2 步：正式匯入", "Step 2: Import")}</p>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                {t(lang, "確認預覽沒問題之後，再把最近 30 日資料寫入資料庫。", "After reviewing the preview, write the last 30 days of data into the database.")}
+                {appleHealthImportScope === "all"
+                  ? t(lang, "確認預覽沒問題之後，把整份匯出資料寫入資料庫。", "After reviewing the preview, write the full export into the database.")
+                  : t(lang, "確認預覽沒問題之後，再把最近 30 日資料寫入資料庫。", "After reviewing the preview, write the last 30 days of data into the database.")}
               </p>
               <div className="mt-4">
                 <ActionButton disabled={isAppleHealthBusy} onClick={handleAppleHealthImportLatest}>
@@ -1864,7 +1903,10 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
             <span className="mx-1 rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
               {`iCloud Drive/Apple Health/${member.name}`}
             </span>
-            {t(lang, "資料夾裡最新的 zip，解壓後自動找到", "for the latest zip in that folder, unpack it, find")} <code>export.xml</code>{t(lang, "，並只同步最近 30 日資料。", ", and sync only the most recent 30 days of data.")}
+            {t(lang, "資料夾裡最新的 zip，解壓後自動找到", "for the latest zip in that folder, unpack it, find")} <code>export.xml</code>
+            {appleHealthImportScope === "all"
+              ? t(lang, "，並匯入整份資料。", ", and import the full dataset.")
+              : t(lang, "，並只同步最近 30 日資料。", ", and sync only the most recent 30 days of data.")}
           </p>
         </SectionCard>
 

@@ -15,9 +15,18 @@ export class AppleHealthImportService {
     this.familyMemberService = familyMemberService;
   }
 
+  normalizeImportScope(scope) {
+    return scope === "all" ? "all" : "30d";
+  }
+
   getDefaultSinceDate(days = 30) {
     const now = new Date();
     return new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  }
+
+  getSinceDateForScope(scope) {
+    const normalizedScope = this.normalizeImportScope(scope);
+    return normalizedScope === "all" ? null : this.getDefaultSinceDate();
   }
 
   async previewFile({ familyMemberId, xmlString }) {
@@ -91,7 +100,7 @@ export class AppleHealthImportService {
     };
   }
 
-  async previewLatestZip({ familyMemberId, folderPath }) {
+  async previewLatestZip({ familyMemberId, folderPath, importScope }) {
     const member = await this.familyMemberService.getFamilyMember(familyMemberId);
 
     if (!member) {
@@ -105,7 +114,8 @@ export class AppleHealthImportService {
     });
     const extraction = await extractAppleHealthXmlFromLatestZip(resolvedFolderPath);
     let preview;
-    const sinceDate = this.getDefaultSinceDate();
+    const normalizedScope = this.normalizeImportScope(importScope);
+    const sinceDate = this.getSinceDateForScope(normalizedScope);
 
     try {
       preview = await this.previewExtractedFile({
@@ -123,12 +133,13 @@ export class AppleHealthImportService {
         folderPath: resolvedFolderPath,
         zipPath: extraction.zipPath,
         exportXmlPath: extraction.exportXmlPath,
-        sinceDate: sinceDate.toISOString()
+        importScope: normalizedScope,
+        sinceDate: sinceDate ? sinceDate.toISOString() : null
       }
     };
   }
 
-  async importLatestZip({ familyMemberId, folderPath }) {
+  async importLatestZip({ familyMemberId, folderPath, importScope }) {
     const member = await this.familyMemberService.getFamilyMember(familyMemberId);
 
     if (!member) {
@@ -142,7 +153,8 @@ export class AppleHealthImportService {
     });
     const extraction = await extractAppleHealthXmlFromLatestZip(resolvedFolderPath);
     let result;
-    const sinceDate = this.getDefaultSinceDate();
+    const normalizedScope = this.normalizeImportScope(importScope);
+    const sinceDate = this.getSinceDateForScope(normalizedScope);
 
     try {
       result = await this.importExtractedFile({
@@ -160,7 +172,8 @@ export class AppleHealthImportService {
         folderPath: resolvedFolderPath,
         zipPath: extraction.zipPath,
         exportXmlPath: extraction.exportXmlPath,
-        sinceDate: sinceDate.toISOString()
+        importScope: normalizedScope,
+        sinceDate: sinceDate ? sinceDate.toISOString() : null
       }
     };
   }

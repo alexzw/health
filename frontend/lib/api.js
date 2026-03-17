@@ -227,7 +227,7 @@ export async function previewAppleHealthImport(memberId, file) {
   return payload.data;
 }
 
-export async function previewLatestAppleHealthImport(memberId, folderPath) {
+export async function previewLatestAppleHealthImport(memberId, folderPath, importScope = "30d") {
   const response = await fetch(`${API_BASE_URL}/apple-health/preview-latest`, {
     method: "POST",
     headers: {
@@ -235,6 +235,7 @@ export async function previewLatestAppleHealthImport(memberId, folderPath) {
     },
     body: JSON.stringify({
       familyMemberId: memberId,
+      importScope,
       ...(folderPath ? { folderPath } : {})
     })
   });
@@ -243,7 +244,7 @@ export async function previewLatestAppleHealthImport(memberId, folderPath) {
   return payload.data;
 }
 
-export async function importLatestAppleHealth(memberId, folderPath) {
+export async function importLatestAppleHealth(memberId, folderPath, importScope = "30d") {
   const response = await fetch(`${API_BASE_URL}/apple-health/import-latest`, {
     method: "POST",
     headers: {
@@ -251,6 +252,7 @@ export async function importLatestAppleHealth(memberId, folderPath) {
     },
     body: JSON.stringify({
       familyMemberId: memberId,
+      importScope,
       ...(folderPath ? { folderPath } : {})
     })
   });
