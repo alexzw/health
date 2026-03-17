@@ -56,6 +56,58 @@ export function createFamilyMemberController(service) {
         next(error);
       }
     },
+    getWeeklyGoals: async (request, response, next) => {
+      try {
+        const goals = await service.getWeeklyGoals(request.params.id);
+
+        if (!goals) {
+          response.status(404).json({
+            error: "Family member not found"
+          });
+          return;
+        }
+
+        response.json({ data: goals });
+      } catch (error) {
+        next(error);
+      }
+    },
+    askCoachQuestion: async (request, response, next) => {
+      try {
+        const reply = await service.askCoachQuestion(
+          request.params.id,
+          request.body.question,
+          request.body.lang || "zh"
+        );
+
+        if (!reply) {
+          response.status(404).json({
+            error: "Family member not found"
+          });
+          return;
+        }
+
+        response.json({ data: reply });
+      } catch (error) {
+        next(error);
+      }
+    },
+    upsertWeeklyGoal: async (request, response, next) => {
+      try {
+        const goal = await service.upsertWeeklyGoal(request.params.id, request.body);
+
+        if (!goal) {
+          response.status(404).json({
+            error: "Family member not found"
+          });
+          return;
+        }
+
+        response.json({ data: goal });
+      } catch (error) {
+        next(error);
+      }
+    },
     updateById: async (request, response, next) => {
       try {
         const member = await service.updateFamilyMember(request.params.id, request.body);

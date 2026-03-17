@@ -61,3 +61,40 @@ test("FamilyMemberService returns a single family member when present", async ()
   assert.equal(result.age >= 6, true);
   assert.equal(result.dateOfBirthDisplay.includes("2019"), true);
 });
+
+test("FamilyMemberService can answer coach questions without optional body measurements", async () => {
+  const repository = {
+    async list() {
+      return [];
+    },
+    async findById(id) {
+      return {
+        id,
+        name: "Alex",
+        dateOfBirth: "1992-02-21",
+        gender: "Male",
+        familyRole: "Father",
+        healthDataRecords: [],
+        exerciseLogs: [],
+        latestMetrics: {
+          weight: {
+            value: 78.4,
+            unit: "kg",
+            recordedAt: "2026-03-10T08:00:00Z"
+          }
+        }
+      };
+    },
+    async findMetricTrendByMemberId() {
+      return [];
+    }
+  };
+
+  const service = new FamilyMemberService(repository);
+  const member = await service.getFamilyMember("alex");
+  const answer = await service.askCoachQuestion("alex", "我應該先睇邊個指標？", "zh");
+
+  assert.equal(member.id, "alex");
+  assert.equal(typeof answer.reply.answer, "string");
+  assert.equal(answer.reply.answer.includes("現階段最值得先做"), true);
+});

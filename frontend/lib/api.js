@@ -43,6 +43,38 @@ export async function getCoachInsights(id, lang = "zh") {
   return payload.data;
 }
 
+export async function askCoachQuestion(id, body) {
+  const response = await fetch(`${API_BASE_URL}/family-members/${id}/coach-chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+  const payload = await handleResponse(response);
+  return payload.data;
+}
+
+export async function getWeeklyGoals(id) {
+  const response = await fetch(`${API_BASE_URL}/family-members/${id}/weekly-goals`, {
+    cache: "no-store"
+  });
+  const payload = await handleResponse(response);
+  return payload.data;
+}
+
+export async function saveWeeklyGoal(id, body) {
+  const response = await fetch(`${API_BASE_URL}/family-members/${id}/weekly-goals`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+  const payload = await handleResponse(response);
+  return payload.data;
+}
+
 export async function updateFamilyMember(id, body) {
   const response = await fetch(`${API_BASE_URL}/family-members/${id}`, {
     method: "PATCH",

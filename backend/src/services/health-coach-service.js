@@ -1,6 +1,24 @@
 import { env } from "../config/env.js";
 import { buildHealthCoachPlan } from "../lib/health-coach.js";
 
+function extractTextFromResponsePayload(payload) {
+  if (payload?.output_text) {
+    return payload.output_text;
+  }
+
+  const outputs = payload?.output || [];
+
+  for (const item of outputs) {
+    for (const content of item?.content || []) {
+      if (typeof content?.text === "string" && content.text) {
+        return content.text;
+      }
+    }
+  }
+
+  return "";
+}
+
 function buildAiPrompt(member, plan, growth, lang) {
   return `
 You are a cautious family health coach. You are not a doctor and must not diagnose.
@@ -41,7 +59,7 @@ async function generateAiSummary(member, plan, growth, lang) {
     return null;
   }
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -49,18 +67,43 @@ async function generateAiSummary(member, plan, growth, lang) {
     },
     body: JSON.stringify({
       model: env.openAiModel,
-      response_format: { type: "json_object" },
-      messages: [
+      input: [
         {
           role: "system",
-          content:
-            "You are a careful health coach for a private family dashboard. You explain trends, not diagnoses."
+          content: [
+            {
+              type: "input_text",
+              text: "You are a careful health coach for a private family dashboard. You explain trends, not diagnoses."
+            }
+          ]
         },
         {
           role: "user",
-          content: buildAiPrompt(member, plan, growth, lang)
+          content: [{ type: "input_text", text: buildAiPrompt(member, plan, growth, lang) }]
         }
-      ]
+      ],
+      text: {
+        format: {
+          type: "json_schema",
+          name: "coach_summary",
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              overview: { type: "string" },
+              whyItMatters: { type: "string" },
+              nextFocus: {
+                type: "array",
+                items: { type: "string" },
+                minItems: 1,
+                maxItems: 3
+              },
+              careNote: { type: "string" }
+            },
+            required: ["overview", "whyItMatters", "nextFocus", "careNote"]
+          }
+        }
+      }
     })
   });
 
@@ -70,13 +113,112 @@ async function generateAiSummary(member, plan, growth, lang) {
   }
 
   const payload = await response.json();
-  const content = payload.choices?.[0]?.message?.content;
+  const content = extractTextFromResponsePayload(payload);
 
   if (!content) {
     return null;
   }
 
   return JSON.parse(content);
+}
+
+async function generateAiAnswer(member, plan, growth, question, lang) {
+  if (!env.openAiApiKey) {
+    return {
+      answer:
+        lang === "en"
+          ? `I can still help using your saved trends. Right now, the most relevant focus is: ${plan.weeklyFocus}`
+          : `即使未接上 AI，我仍然可以根據現有趨勢幫你解讀。現階段最值得先做的是：${plan.weeklyFocus}`,
+      followUp:
+        lang === "en"
+          ? "Add OPENAI_API_KEY to enable a more detailed personalized answer."
+          : "如果之後加入 OPENAI_API_KEY，就可以得到更深入、更加個人化的回答。"
+    };
+  }
+
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${env.openAiApiKey}`
+    },
+    body: JSON.stringify({
+      model: env.openAiModel,
+      input: [
+        {
+          role: "system",
+          content: [
+            {
+              type: "input_text",
+              text: "You are a careful family health coach. You explain trends and habit suggestions only, never diagnose, and always advise medical review for urgent or concerning symptoms."
+            }
+          ]
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: `
+Answer the user's question in ${lang === "en" ? "English" : "Traditional Chinese"}.
+Return valid JSON with:
+{
+  "answer": "string",
+  "followUp": "string"
+}
+
+Question:
+${question}
+
+Context:
+${JSON.stringify(
+            {
+              member: {
+                id: member.id,
+                name: member.name,
+                familyRole: member.familyRole
+              },
+              goal: plan.goal,
+              metrics: plan.metrics,
+              observations: plan.observations,
+              actions: plan.actions,
+              watchouts: plan.watchouts,
+              growthSummary: growth?.summary || null
+            },
+            null,
+            2
+          )}
+`
+            }
+          ]
+        }
+      ],
+      text: {
+        format: {
+          type: "json_schema",
+          name: "coach_answer",
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              answer: { type: "string" },
+              followUp: { type: "string" }
+            },
+            required: ["answer", "followUp"]
+          }
+        }
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`OpenAI request failed: ${response.status} ${errorText}`);
+  }
+
+  const payload = await response.json();
+  const content = extractTextFromResponsePayload(payload);
+  return content ? JSON.parse(content) : null;
 }
 
 export class HealthCoachService {
@@ -116,6 +258,30 @@ export class HealthCoachService {
         summary: aiSummary,
         error: aiError
       }
+    };
+  }
+
+  async askCoachQuestion(id, question, lang = "zh") {
+    const member = await this.familyMemberService.getFamilyMember(id);
+
+    if (!member) {
+      return null;
+    }
+
+    const growth = member.familyRole === "Child" ? await this.familyMemberService.getGrowthTracking(id) : null;
+    const plan = buildHealthCoachPlan(member, growth, lang);
+    const reply = await generateAiAnswer(member, plan, growth, question, lang);
+
+    return {
+      member: {
+        id: member.id,
+        name: member.name,
+        familyRole: member.familyRole
+      },
+      question,
+      reply,
+      aiEnabled: Boolean(env.openAiApiKey),
+      model: env.openAiApiKey ? env.openAiModel : ""
     };
   }
 }

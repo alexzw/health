@@ -1,4 +1,5 @@
 import { seededFamilyMembers } from "../seed/family-members.js";
+import { buildDefaultWeeklyGoals } from "../lib/weekly-goals.js";
 
 const RECENT_HEALTH_RECORD_LIMIT = 12;
 const RECENT_EXERCISE_LOG_LIMIT = 8;
@@ -130,6 +131,46 @@ export class InMemoryFamilyMemberRepository {
           unit: entry.unit
         };
       });
+  }
+
+  async findWeeklyGoalsByMemberId(id) {
+    const member = seededFamilyMembers.find((entry) => entry.id === id);
+
+    if (!member) {
+      return [];
+    }
+
+    if (!member.weeklyGoals) {
+      member.weeklyGoals = buildDefaultWeeklyGoals(member);
+    }
+
+    return member.weeklyGoals;
+  }
+
+  async upsertWeeklyGoal(id, goal) {
+    const member = seededFamilyMembers.find((entry) => entry.id === id);
+
+    if (!member) {
+      return null;
+    }
+
+    if (!member.weeklyGoals) {
+      member.weeklyGoals = buildDefaultWeeklyGoals(member);
+    }
+
+    const existingIndex = member.weeklyGoals.findIndex((entry) => entry.id === goal.id);
+
+    if (existingIndex === -1) {
+      member.weeklyGoals.push(goal);
+      return goal;
+    }
+
+    member.weeklyGoals[existingIndex] = {
+      ...member.weeklyGoals[existingIndex],
+      ...goal
+    };
+
+    return member.weeklyGoals[existingIndex];
   }
 
   async updateMember(id, updates) {

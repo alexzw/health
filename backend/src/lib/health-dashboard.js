@@ -110,6 +110,9 @@ export function buildHealthDashboardSummary(member) {
   return {
     cards: {
       latestWeight: member.latestMetrics?.weight || null,
+      latestWaist: member.latestMetrics?.waist || null,
+      latestHip: member.latestMetrics?.hip || null,
+      latestChest: member.latestMetrics?.chest || null,
       latestSteps: metricTrends.steps?.[metricTrends.steps.length - 1]
         ? {
             value: metricTrends.steps[metricTrends.steps.length - 1].value,

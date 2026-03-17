@@ -27,6 +27,9 @@ export function formatCategoryLabel(category, lang = "zh") {
     zh: {
       weight: "體重",
       height: "身高",
+      waist: "腰圍",
+      hip: "臀圍",
+      chest: "胸圍",
       sleep: "睡眠",
       steps: "步數",
       heart_rate: "心率",
@@ -36,6 +39,9 @@ export function formatCategoryLabel(category, lang = "zh") {
     en: {
       weight: "Weight",
       height: "Height",
+      waist: "Waist",
+      hip: "Hip",
+      chest: "Chest",
       sleep: "Sleep",
       steps: "Steps",
       heart_rate: "Heart Rate",
@@ -61,6 +67,7 @@ export function formatUnitLabel(unit, lang = "zh") {
       hours: "小時",
       kg: "kg",
       cm: "cm",
+      in: "in",
       bpm: "次/分鐘",
       "count/min": "次/分鐘",
       kcal: "kcal"
@@ -71,6 +78,7 @@ export function formatUnitLabel(unit, lang = "zh") {
       hours: "hours",
       kg: "kg",
       cm: "cm",
+      in: "in",
       bpm: "bpm",
       "count/min": "bpm",
       kcal: "kcal"

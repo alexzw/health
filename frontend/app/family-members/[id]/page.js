@@ -7,11 +7,12 @@ import { GrowthInsights } from "../../../components/growth-insights";
 import { HealthRecordTable } from "../../../components/health-record-table";
 import { MetricHistoryChart } from "../../../components/metric-history-chart";
 import { MiniMetricChart } from "../../../components/mini-metric-chart";
+import { CoachActionsPanel } from "../../../components/coach-actions-panel";
 import { ProfileManagementPanel } from "../../../components/profile-management-panel";
 import { SmartHealthCoach } from "../../../components/smart-health-coach";
 import { calculateBmi } from "../../../lib/bmi";
 import { formatChineseDate, formatMetric, formatValueWithUnit } from "../../../lib/format";
-import { getCoachInsights, getFamilyMember, getGrowthTracking } from "../../../lib/api";
+import { getCoachInsights, getFamilyMember, getGrowthTracking, getWeeklyGoals } from "../../../lib/api";
 import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../../../lib/i18n";
 
 function pickSecondaryTrend(metricTrends = {}) {
@@ -68,10 +69,12 @@ export default async function FamilyMemberDetailPage({ params }) {
   let growth = null;
   let bmi = null;
   let coach = null;
+  let weeklyGoals = [];
 
   try {
     member = await getFamilyMember(resolvedParams.id);
     coach = await getCoachInsights(resolvedParams.id, lang);
+    weeklyGoals = await getWeeklyGoals(resolvedParams.id);
     bmi = member.latestBmi;
 
     if (resolvedParams.id === "ryan") {
@@ -186,6 +189,7 @@ export default async function FamilyMemberDetailPage({ params }) {
       ) : null}
 
       {coach ? <SmartHealthCoach coach={coach} lang={lang} /> : null}
+      {coach ? <CoachActionsPanel memberId={member.id} lang={lang} goals={weeklyGoals} /> : null}
 
       {member.familyRole !== "Child" ? (
         <div className="space-y-5">
@@ -327,6 +331,33 @@ export default async function FamilyMemberDetailPage({ params }) {
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Sleep</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(dashboard?.cards?.latestSleep || member.latestMetrics?.sleep, {
+                        emptyLabel: t(lang, "未填寫", "Not set"),
+                        lang
+                      })}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white/80 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Waist</p>
+                    <p className="mt-1 font-semibold text-ink">
+                      {formatMetric(dashboard?.cards?.latestWaist || member.latestMetrics?.waist, {
+                        emptyLabel: t(lang, "未填寫", "Not set"),
+                        lang
+                      })}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white/80 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Hip</p>
+                    <p className="mt-1 font-semibold text-ink">
+                      {formatMetric(dashboard?.cards?.latestHip || member.latestMetrics?.hip, {
+                        emptyLabel: t(lang, "未填寫", "Not set"),
+                        lang
+                      })}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white/80 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Chest</p>
+                    <p className="mt-1 font-semibold text-ink">
+                      {formatMetric(dashboard?.cards?.latestChest || member.latestMetrics?.chest, {
                         emptyLabel: t(lang, "未填寫", "Not set"),
                         lang
                       })}

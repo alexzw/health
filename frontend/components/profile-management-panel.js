@@ -81,6 +81,9 @@ function normalizeRecordCategory(category) {
 const HEALTH_RECORD_PRESETS = [
   { value: "weight", label: "體重", unit: "kg" },
   { value: "height", label: "身高", unit: "cm" },
+  { value: "waist", label: "腰圍", unit: "cm" },
+  { value: "hip", label: "臀圍", unit: "cm" },
+  { value: "chest", label: "胸圍", unit: "cm" },
   { value: "heart_rate", label: "心率", unit: "bpm" },
   { value: "resting_heart_rate", label: "靜止心率", unit: "bpm" },
   { value: "steps", label: "步數", unit: "steps" },
@@ -109,6 +112,9 @@ function translateHealthPresetLabel(lang, value) {
   const labels = {
     weight: t(lang, "體重", "Weight"),
     height: t(lang, "身高", "Height"),
+    waist: t(lang, "腰圍", "Waist"),
+    hip: t(lang, "臀圍", "Hip"),
+    chest: t(lang, "胸圍", "Chest"),
     heart_rate: t(lang, "心率", "Heart Rate"),
     resting_heart_rate: t(lang, "靜止心率", "Resting Heart Rate"),
     steps: t(lang, "步數", "Steps"),
@@ -171,11 +177,14 @@ function isManualExerciseLog(log) {
 function getHealthCategoryOrder(category) {
   const map = {
     weight: 0,
-    heart_rate: 1,
-    resting_heart_rate: 2,
-    steps: 3,
-    sleep: 4,
-    height: 5
+    waist: 1,
+    hip: 2,
+    chest: 3,
+    heart_rate: 4,
+    resting_heart_rate: 5,
+    steps: 6,
+    sleep: 7,
+    height: 8
   };
 
   return map[normalizeRecordCategory(category)] ?? 99;
@@ -701,6 +710,13 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
     recordedAt: toDateTimeLocalValue(new Date().toISOString()),
     notes: ""
   });
+  const [quickBodyMeasurementsForm, setQuickBodyMeasurementsForm] = useState({
+    waist: member.latestMetrics?.waist?.value ? String(member.latestMetrics.waist.value) : "",
+    hip: member.latestMetrics?.hip?.value ? String(member.latestMetrics.hip.value) : "",
+    chest: member.latestMetrics?.chest?.value ? String(member.latestMetrics.chest.value) : "",
+    recordedAt: toDateTimeLocalValue(new Date().toISOString()),
+    notes: ""
+  });
   const [quickHeightForm, setQuickHeightForm] = useState({
     value: latestManualHeightRecord?.value ? String(latestManualHeightRecord.value) : "",
     recordedAt: latestManualHeightRecord
@@ -976,7 +992,7 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
 
         {isAdult ? (
           <SectionCard title={t(lang, "身體資料", "Body Metrics")} description={t(lang, "身高較少變動，可以在這裡設定；體重則可快速補一筆最新紀錄。", "Set height here and quickly add the latest weight record.")}>
-            <div className="grid gap-5 lg:grid-cols-2">
+            <div className="grid gap-5 lg:grid-cols-3">
               <form
                 className="rounded-[24px] border border-white/70 bg-white/70 p-5"
                 onSubmit={(event) => {
@@ -1114,6 +1130,135 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
                     />
                   </FieldLabel>
                   <SubmitButton disabled={isSaving}>{t(lang, "新增體重紀錄", "Add weight record")}</SubmitButton>
+                </div>
+              </form>
+
+              <form
+                className="rounded-[24px] border border-white/70 bg-white/70 p-5"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  runAction(
+                    async () => {
+                      const entries = [
+                        ["waist", quickBodyMeasurementsForm.waist],
+                        ["hip", quickBodyMeasurementsForm.hip],
+                        ["chest", quickBodyMeasurementsForm.chest]
+                      ].filter(([, value]) => String(value || "").trim());
+
+                      if (!entries.length) {
+                        throw new Error(t(lang, "請至少填寫一項圍度", "Enter at least one body measurement"));
+                      }
+
+                      await Promise.all(
+                        entries.map(([category, value]) =>
+                          createHealthRecord(member.id, {
+                            category,
+                            value,
+                            unit: "cm",
+                            notes: quickBodyMeasurementsForm.notes,
+                            recordedAt: new Date(quickBodyMeasurementsForm.recordedAt).toISOString()
+                          })
+                        )
+                      );
+
+                      setQuickBodyMeasurementsForm({
+                        waist: "",
+                        hip: "",
+                        chest: "",
+                        recordedAt: toDateTimeLocalValue(new Date().toISOString()),
+                        notes: ""
+                      });
+                    },
+                    t(lang, "圍度已記錄", "Measurements saved")
+                  );
+                }}
+              >
+                <p className="text-base font-semibold text-ink">{t(lang, "快速記錄圍度", "Quick Body Measurements")}</p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    <p>{t(lang, "目前腰圍", "Current waist")}</p>
+                    <p className="mt-1 font-semibold text-ink">
+                      {member.latestMetrics?.waist?.value ? `${member.latestMetrics.waist.value} cm` : t(lang, "未設定", "Not set")}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    <p>{t(lang, "目前臀圍", "Current hip")}</p>
+                    <p className="mt-1 font-semibold text-ink">
+                      {member.latestMetrics?.hip?.value ? `${member.latestMetrics.hip.value} cm` : t(lang, "未設定", "Not set")}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    <p>{t(lang, "目前胸圍", "Current chest")}</p>
+                    <p className="mt-1 font-semibold text-ink">
+                      {member.latestMetrics?.chest?.value ? `${member.latestMetrics.chest.value} cm` : t(lang, "未設定", "Not set")}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                  <FieldLabel label={t(lang, "腰圍（cm）", "Waist (cm)")}>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.1"
+                      className={baseInputClass}
+                      value={quickBodyMeasurementsForm.waist}
+                      onChange={(event) =>
+                        setQuickBodyMeasurementsForm((current) => ({ ...current, waist: event.target.value }))
+                      }
+                    />
+                  </FieldLabel>
+                  <FieldLabel label={t(lang, "臀圍（cm）", "Hip (cm)")}>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.1"
+                      className={baseInputClass}
+                      value={quickBodyMeasurementsForm.hip}
+                      onChange={(event) =>
+                        setQuickBodyMeasurementsForm((current) => ({ ...current, hip: event.target.value }))
+                      }
+                    />
+                  </FieldLabel>
+                  <FieldLabel label={t(lang, "胸圍（cm）", "Chest (cm)")}>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.1"
+                      className={baseInputClass}
+                      value={quickBodyMeasurementsForm.chest}
+                      onChange={(event) =>
+                        setQuickBodyMeasurementsForm((current) => ({ ...current, chest: event.target.value }))
+                      }
+                    />
+                  </FieldLabel>
+                  <FieldLabel label={t(lang, "記錄時間", "Recorded At")}>
+                    <input
+                      type="datetime-local"
+                      className={baseInputClass}
+                      value={quickBodyMeasurementsForm.recordedAt}
+                      onChange={(event) =>
+                        setQuickBodyMeasurementsForm((current) => ({
+                          ...current,
+                          recordedAt: event.target.value
+                        }))
+                      }
+                    />
+                  </FieldLabel>
+                  <div className="sm:col-span-2">
+                    <FieldLabel label={t(lang, "備註", "Notes")}>
+                      <input
+                        className={baseInputClass}
+                        placeholder={t(lang, "例如：量身日", "Example: measurement check")}
+                        value={quickBodyMeasurementsForm.notes}
+                        onChange={(event) =>
+                          setQuickBodyMeasurementsForm((current) => ({ ...current, notes: event.target.value }))
+                        }
+                      />
+                    </FieldLabel>
+                  </div>
+                  <div className="sm:col-span-3">
+                    <SubmitButton disabled={isSaving}>{t(lang, "新增圍度紀錄", "Add measurements")}</SubmitButton>
+                  </div>
                 </div>
               </form>
             </div>

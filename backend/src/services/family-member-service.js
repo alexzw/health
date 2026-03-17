@@ -3,6 +3,7 @@ import { calculateBmi, findLatestMetric } from "../lib/body-metrics.js";
 import { analyzeGrowthMeasurements } from "../lib/growth.js";
 import { buildHealthDashboardSummary } from "../lib/health-dashboard.js";
 import { HttpError } from "../lib/http-error.js";
+import { buildDefaultWeeklyGoals } from "../lib/weekly-goals.js";
 import { HealthCoachService } from "./health-coach-service.js";
 
 function normalizeIsoDate(value) {
@@ -86,6 +87,14 @@ function parseOptionalNumber(value, fieldName) {
   return parsedValue;
 }
 
+function slugifyGoalTitle(title) {
+  return String(title || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || crypto.randomUUID();
+}
+
 export class FamilyMemberService {
   constructor(repository) {
     this.repository = repository;
@@ -104,7 +113,7 @@ export class FamilyMemberService {
       return null;
     }
 
-    const trendCategories = ["weight", "steps", "heart_rate", "resting_heart_rate", "sleep"];
+    const trendCategories = ["weight", "waist", "hip", "chest", "steps", "heart_rate", "resting_heart_rate", "sleep"];
     const trendEntries = await Promise.all(
       trendCategories.map(async (category) => [
         category,
@@ -145,6 +154,44 @@ export class FamilyMemberService {
 
   async getCoachInsights(id, lang = "zh") {
     return this.healthCoachService.getCoachInsights(id, lang);
+  }
+
+  async askCoachQuestion(id, question, lang = "zh") {
+    if (!String(question || "").trim()) {
+      throw new HttpError(400, "請先輸入問題");
+    }
+
+    return this.healthCoachService.askCoachQuestion(id, String(question).trim(), lang);
+  }
+
+  async getWeeklyGoals(id) {
+    const member = await this.repository.findById(id);
+
+    if (!member) {
+      return null;
+    }
+
+    const goals = await this.repository.findWeeklyGoalsByMemberId(id);
+    return goals.length ? goals : buildDefaultWeeklyGoals(member);
+  }
+
+  async upsertWeeklyGoal(id, goalInput) {
+    const member = await this.repository.findById(id);
+
+    if (!member) {
+      return null;
+    }
+
+    return this.repository.upsertWeeklyGoal(id, {
+      id: goalInput.id || crypto.randomUUID(),
+      slug: goalInput.slug || slugifyGoalTitle(goalInput.title),
+      title: String(goalInput.title || "").trim(),
+      targetValue: parseOptionalNumber(goalInput.targetValue, "目標數值"),
+      unit: String(goalInput.unit || "").trim(),
+      cadence: String(goalInput.cadence || "weekly").trim(),
+      notes: String(goalInput.notes || "").trim(),
+      isCompleted: Boolean(goalInput.isCompleted)
+    });
   }
 
   async updateFamilyMember(id, updates) {

@@ -17,6 +17,19 @@ function formatMetricValue(metric) {
   };
 }
 
+function formatBodyMeasurement(metric, lang, zhLabel, enLabel) {
+  const formatted = formatMetricValue(metric);
+
+  if (!formatted) {
+    return null;
+  }
+
+  return {
+    label: text(lang, zhLabel, enLabel),
+    ...formatted
+  };
+}
+
 function countRecentWorkouts(exerciseLogs = [], days = 7) {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
   return exerciseLogs.filter((entry) => new Date(entry.performedAt).getTime() >= cutoff).length;
@@ -71,6 +84,9 @@ function buildAdultCoach(member, lang) {
   const trends = dashboard.trends || {};
   const recentWorkoutCount = countRecentWorkouts(member.exerciseLogs || []);
   const latestWeight = formatMetricValue(member.latestMetrics?.weight);
+  const latestWaist = formatBodyMeasurement(member.latestMetrics?.waist, lang, "最新腰圍", "Latest Waist");
+  const latestHip = formatBodyMeasurement(member.latestMetrics?.hip, lang, "最新臀圍", "Latest Hip");
+  const latestChest = formatBodyMeasurement(member.latestMetrics?.chest, lang, "最新胸圍", "Latest Chest");
   const latestSteps = formatMetricValue(dashboard.cards?.latestSteps || member.latestMetrics?.steps);
   const latestSleep = formatMetricValue(dashboard.cards?.latestSleep || member.latestMetrics?.sleep);
   const bmi = member.latestBmi;
@@ -145,6 +161,20 @@ function buildAdultCoach(member, lang) {
         : text(lang, "目前體重資料仍不足，未能建立可靠基準。", "There is not enough body-weight data yet to build a reliable baseline.")
     );
 
+    if (latestWaist || latestHip || latestChest) {
+      const parts = [latestWaist, latestHip, latestChest]
+        .filter(Boolean)
+        .map((metric) => `${metric.label}: ${metric.value} ${metric.unit}`.trim());
+
+      observations.push(
+        text(
+          lang,
+          `目前可用的圍度基準為 ${parts.join("、")}，呢啲通常比單看體重更適合觀察塑形變化。`,
+          `Available body measurements are ${parts.join(", ")}, which are often more useful than scale weight alone for tracking shaping progress.`
+        )
+      );
+    }
+
     observations.push(
       latestSleep
         ? text(
@@ -173,11 +203,14 @@ function buildAdultCoach(member, lang) {
   return {
     metrics: [
       { label: text(lang, "最新體重", "Latest Weight"), ...latestWeight },
+      latestWaist,
+      latestHip,
+      latestChest,
       { label: "BMI", value: bmi, unit: "" },
       { label: text(lang, "最新步數", "Latest Steps"), ...latestSteps },
       { label: text(lang, "最新睡眠", "Latest Sleep"), ...latestSleep },
       { label: text(lang, "7 日運動次數", "Workouts in 7 Days"), value: recentWorkoutCount, unit: "" }
-    ].filter((item) => item.value !== null && item.value !== undefined),
+    ].filter((item) => item && item.value !== null && item.value !== undefined),
     observations,
     actions,
     watchouts,

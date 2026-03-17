@@ -39,6 +39,21 @@ CREATE TABLE IF NOT EXISTS exercise_logs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS weekly_goals (
+  id UUID PRIMARY KEY,
+  family_member_id TEXT NOT NULL REFERENCES family_members(id) ON DELETE CASCADE,
+  slug TEXT NOT NULL,
+  title TEXT NOT NULL,
+  target_value NUMERIC(10, 2),
+  unit TEXT,
+  cadence TEXT NOT NULL DEFAULT 'weekly',
+  notes TEXT,
+  is_completed BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT weekly_goals_family_member_slug_unique UNIQUE (family_member_id, slug)
+);
+
 CREATE INDEX IF NOT EXISTS idx_health_records_family_member_recorded_at
   ON health_records (family_member_id, recorded_at DESC);
 
@@ -47,3 +62,6 @@ CREATE INDEX IF NOT EXISTS idx_growth_measurements_family_member_measured_at
 
 CREATE INDEX IF NOT EXISTS idx_exercise_logs_family_member_performed_at
   ON exercise_logs (family_member_id, performed_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_weekly_goals_family_member
+  ON weekly_goals (family_member_id);

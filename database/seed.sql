@@ -36,3 +36,16 @@ VALUES
   ('16161616-1616-1616-1616-161616161616', 'amelie', 'Cardio', 40, 290, 'Indoor cycling', '2026-03-07T18:30:00Z'),
   ('17171717-1717-1717-1717-171717171717', 'amelie', 'Gym Workout', 48, 360, 'Leg day', '2026-03-13T18:10:00Z')
 ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO weekly_goals (id, family_member_id, slug, title, target_value, unit, cadence, notes, is_completed)
+VALUES
+  ('20111111-1111-1111-1111-111111111111', 'alex', 'weight-checkins', 'Weight Check-Ins', 4, 'times', 'weekly', 'Log weight 3 to 5 times each week.', FALSE),
+  ('20222222-2222-2222-2222-222222222222', 'alex', 'daily-steps-floor', 'Daily Steps Floor', 10000, 'steps', 'weekly', 'Keep daily activity stable for fat loss.', FALSE),
+  ('20333333-3333-3333-3333-333333333333', 'alex', 'planned-workouts', 'Planned Workouts', 3, 'sessions', 'weekly', 'Protect muscle while losing weight.', FALSE),
+  ('20444444-4444-4444-4444-444444444444', 'amelie', 'strength-sessions', 'Strength Sessions', 3, 'sessions', 'weekly', 'Build a repeatable shaping routine.', FALSE),
+  ('20555555-5555-5555-5555-555555555555', 'amelie', 'active-days', 'Active Days', 5, 'days', 'weekly', 'Stay consistent outside formal workouts.', FALSE),
+  ('20666666-6666-6666-6666-666666666666', 'amelie', 'sleep-floor', 'Sleep Floor', 7, 'hours', 'weekly', 'Recovery helps body recomposition.', FALSE),
+  ('20777777-7777-7777-7777-777777777777', 'ryan', 'height-check', 'Height Check', 1, 'time', 'monthly', 'Measure height once each month.', FALSE),
+  ('20888888-8888-8888-8888-888888888888', 'ryan', 'weight-check', 'Weight Check', 1, 'time', 'monthly', 'Record weight together with height.', FALSE),
+  ('20999999-9999-9999-9999-999999999999', 'ryan', 'growth-review', 'Growth Review', 1, 'review', 'monthly', 'Review trend instead of one isolated record.', FALSE)
+ON CONFLICT (family_member_id, slug) DO NOTHING;

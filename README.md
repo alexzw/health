@@ -41,3 +41,25 @@ npm run dev:frontend
 ```
 
 The backend uses seeded in-memory data when `DATABASE_URL` is not set, which keeps Features 1 and 2 usable during local setup.
+
+## OpenAI Smart Coach
+
+Add these backend env vars to enable AI-written coaching replies on top of the existing rule-based summaries:
+
+```bash
+OPENAI_API_KEY=your_api_key
+OPENAI_MODEL=gpt-5-mini
+```
+
+The app will still work without an API key, but Smart Coach will fall back to the built-in coaching engine.
+
+## Mobile Access
+
+The GitHub repository is not the website. To open the app on your phone, deploy it and use the deployment URL.
+
+Recommended setup:
+
+- Frontend: Vercel
+- Backend + PostgreSQL: Render
+
+Detailed steps are in [`docs/deployment-mobile-access.md`](/Users/alex/Documents/AI/Health/docs/deployment-mobile-access.md).

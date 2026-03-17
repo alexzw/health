@@ -57,6 +57,19 @@ function mapTrendPointRow(row) {
   };
 }
 
+function mapWeeklyGoalRow(row) {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    targetValue: row.target_value === null ? null : Number(row.target_value),
+    unit: row.unit,
+    cadence: row.cadence,
+    notes: row.notes || "",
+    isCompleted: Boolean(row.is_completed)
+  };
+}
+
 function buildLatestMetricValueSubquery(category) {
   return `
     (
@@ -85,6 +98,9 @@ const latestMetricsProjection = `
   JSON_BUILD_OBJECT(
     'weight', ${buildLatestMetricValueSubquery("weight")},
     'height', ${buildLatestMetricValueSubquery("height")},
+    'waist', ${buildLatestMetricValueSubquery("waist")},
+    'hip', ${buildLatestMetricValueSubquery("hip")},
+    'chest', ${buildLatestMetricValueSubquery("chest")},
     'heart_rate', ${buildLatestMetricValueSubquery("heart_rate")},
     'resting_heart_rate', ${buildLatestMetricValueSubquery("resting_heart_rate")},
     'steps', ${buildLatestMetricValueSubquery("steps")},
@@ -242,6 +258,68 @@ export class PostgresFamilyMemberRepository {
     );
 
     return result.rows.map(mapExerciseLogRow);
+  }
+
+  async findWeeklyGoalsByMemberId(id) {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        SELECT id, slug, title, target_value, unit, cadence, notes, is_completed
+        FROM weekly_goals
+        WHERE family_member_id = $1
+        ORDER BY created_at ASC;
+      `,
+      [id]
+    );
+
+    return result.rows.map(mapWeeklyGoalRow);
+  }
+
+  async upsertWeeklyGoal(id, goal) {
+    const pool = getPool();
+    const result = await pool.query(
+      `
+        INSERT INTO weekly_goals (
+          id,
+          family_member_id,
+          slug,
+          title,
+          target_value,
+          unit,
+          cadence,
+          notes,
+          is_completed
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ON CONFLICT (family_member_id, slug)
+        DO UPDATE SET
+          title = EXCLUDED.title,
+          target_value = EXCLUDED.target_value,
+          unit = EXCLUDED.unit,
+          cadence = EXCLUDED.cadence,
+          notes = EXCLUDED.notes,
+          is_completed = EXCLUDED.is_completed,
+          updated_at = NOW()
+        RETURNING id, slug, title, target_value, unit, cadence, notes, is_completed;
+      `,
+      [
+        goal.id,
+        id,
+        goal.slug,
+        goal.title,
+        goal.targetValue,
+        goal.unit,
+        goal.cadence,
+        goal.notes || "",
+        Boolean(goal.isCompleted)
+      ]
+    );
+
+    if (result.rowCount === 0) {
+      return null;
+    }
+
+    return mapWeeklyGoalRow(result.rows[0]);
   }
 
   async updateMember(id, updates) {
