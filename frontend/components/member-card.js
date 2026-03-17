@@ -43,10 +43,10 @@ export function MemberCard({ member }) {
           <div>
             <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
               {member.familyRole === "Father"
-                ? "爸爸"
+                ? "Father"
                 : member.familyRole === "Mother"
-                  ? "媽媽"
-                  : "孩子"}
+                  ? "Mother"
+                  : "Child"}
             </p>
             <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
               {member.name}
@@ -54,23 +54,21 @@ export function MemberCard({ member }) {
           </div>
         </div>
         <span className="rounded-full bg-blueSoft px-3 py-1 text-sm font-medium text-blue">
-          {member.age} 歲
+          {member.age} yrs
         </span>
       </div>
       <div className="mt-5 rounded-[24px] bg-white/70 px-4 py-4">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
-            Profile
-          </p>
+        <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Profile</p>
         <p className="mt-3 text-sm text-slate-500">
-          {member.gender === "Male" ? "男" : member.gender === "Female" ? "女" : member.gender}
+          {member.gender === "Male" ? "Male" : member.gender === "Female" ? "Female" : member.gender}
         </p>
         <p className="mt-2 text-sm text-slate-500">{formatChineseDate(member.dateOfBirth)}</p>
       </div>
-      <p className="mt-6 text-sm text-slate-700">健康紀錄共 {member.totalHealthRecordCount || 0} 筆</p>
-      <p className="mt-2 text-sm text-slate-500">運動紀錄共 {member.totalExerciseLogCount || 0} 筆</p>
+      <p className="mt-6 text-sm text-slate-700">Health Records: {member.totalHealthRecordCount || 0}</p>
+      <p className="mt-2 text-sm text-slate-500">Workout Records: {member.totalExerciseLogCount || 0}</p>
       {member.latestBmi ? <p className="mt-2 text-sm text-slate-500">BMI {member.latestBmi}</p> : null}
       <div className="mt-8 text-sm font-semibold text-blue transition group-hover:translate-x-1">
-        查看檔案 →
+        View Profile →
       </div>
     </Link>
   );
