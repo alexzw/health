@@ -19,6 +19,7 @@ import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../
 import { enrichGoalsWithProgress } from "../../../lib/goal-progress";
 import {
   buildMemberConsistency,
+  buildMemberChangeDetections,
   buildMemberContextInsight,
   buildMemberHealthScores,
   buildMemberScoreBreakdown
@@ -165,6 +166,7 @@ export default async function FamilyMemberDetailPage({ params, searchParams }) {
   const memberScoreBreakdown = buildMemberScoreBreakdown({ member, growth, lang });
   const memberConsistency = buildMemberConsistency(member, growth, lang);
   const memberContextInsight = buildMemberContextInsight(member, growth, lang);
+  const memberChangeDetections = buildMemberChangeDetections(member, growth, lang);
 
   return (
     <section className="space-y-8">
@@ -275,6 +277,37 @@ export default async function FamilyMemberDetailPage({ params, searchParams }) {
               </span>
             </div>
             <p className="mt-4 text-sm leading-6 text-slate-500">{memberContextInsight.detail}</p>
+          </div>
+        ) : null}
+        {memberChangeDetections.length ? (
+          <div className="mt-4 rounded-[26px] border border-white/70 bg-white/75 p-5">
+            <p className="section-kicker">{t(lang, "變化偵測", "Change Detection")}</p>
+            <div className="mt-4 grid gap-3">
+              {memberChangeDetections.slice(0, 3).map((change) => (
+                <div
+                  key={change.id}
+                  className={`rounded-[20px] px-4 py-4 ${
+                    change.severity === "follow-up"
+                      ? "border border-rose-200 bg-rose-50"
+                      : change.severity === "attention"
+                        ? "border border-amber-200 bg-amber-50"
+                        : "bg-slate-50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-ink">{change.title}</p>
+                    <span className="rounded-full bg-white/80 px-2 py-1 text-[11px] font-semibold text-slate-600">
+                      {change.severity === "follow-up"
+                        ? t(lang, "跟進", "Follow-up")
+                        : change.severity === "attention"
+                          ? t(lang, "留意", "Attention")
+                          : t(lang, "資訊", "Info")}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{change.detail}</p>
+                </div>
+              ))}
+            </div>
           </div>
         ) : null}
         <div className="mt-6 flex flex-wrap items-center gap-3">

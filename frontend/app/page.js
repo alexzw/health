@@ -14,6 +14,7 @@ import {
   buildHealthScoreBreakdown,
   buildConsistencySignals,
   buildContextAwareInsights,
+  buildChangeDetections,
   buildMemberHealthScores,
   buildMilestones,
   buildProactiveInsights,
@@ -126,6 +127,7 @@ export default async function HomePage({ searchParams }) {
   const proactiveInsights = buildProactiveInsights(engagementContext, lang);
   const contextAwareInsights = buildContextAwareInsights(engagementContext, lang);
   const reminders = buildReminders(engagementContext, lang);
+  const changeDetections = buildChangeDetections(engagementContext, lang);
   const milestones = buildMilestones(engagementContext, lang);
   const familyHealthScore = buildFamilyHealthScore(engagementContext);
   const healthScoreBreakdown = buildHealthScoreBreakdown(engagementContext, lang);
@@ -527,6 +529,52 @@ export default async function HomePage({ searchParams }) {
                   <Link href="/family-members/alex#manage" className="button-secondary mt-4 px-4 py-2 text-sm font-semibold">
                     {t(lang, "同步 Apple Health", "Sync Apple Health")}
                   </Link>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="soft-card rounded-[34px] p-6 sm:p-7">
+            <p className="section-kicker">{t(lang, "變化偵測", "Change Detection")}</p>
+            <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-ink">
+              {t(lang, "值得留意的變化", "Notable Changes")}
+            </h2>
+            <div className="mt-5 grid gap-4">
+              {changeDetections.length ? (
+                changeDetections.map((change) => (
+                  <div
+                    key={change.id}
+                    className={`rounded-[24px] p-5 ${
+                      change.severity === "follow-up"
+                        ? "border border-rose-200 bg-rose-50"
+                        : change.severity === "attention"
+                          ? "border border-amber-200 bg-amber-50"
+                          : "metric-band"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-base font-semibold text-ink">{change.title}</p>
+                      <span className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                        {change.group === "things_to_check"
+                          ? t(lang, "Things to Check", "Things to Check")
+                          : t(lang, "Notable", "Notable")}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-slate-700">{change.detail}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50/80 p-5">
+                  <p className="text-sm font-semibold text-slate-700">
+                    {t(lang, "暫時未見明顯變化", "No meaningful changes right now")}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    {t(
+                      lang,
+                      "當有更值得留意的體重、活動、睡眠或成長變化時，系統會在這裡先幫你捉出來。",
+                      "When weight, activity, sleep, or growth patterns shift in a meaningful way, the app will surface them here first."
+                    )}
+                  </p>
                 </div>
               )}
             </div>

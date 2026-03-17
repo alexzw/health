@@ -37,6 +37,24 @@ function buildDelta(items = [], getValue, getDate, days) {
   return round(Number(getValue(filtered[filtered.length - 1])) - Number(getValue(filtered[0])));
 }
 
+function previousItems(items, getDate, days, offsetDays = days) {
+  const now = Date.now();
+  const start = now - (offsetDays + days) * 24 * 60 * 60 * 1000;
+  const end = now - offsetDays * 24 * 60 * 60 * 1000;
+  return (items || []).filter((item) => {
+    const value = new Date(getDate(item)).getTime();
+    return value >= start && value < end;
+  });
+}
+
+function daysSince(dateValue) {
+  if (!dateValue) {
+    return null;
+  }
+
+  return Math.max(0, daysBetween(new Date(), dateValue));
+}
+
 function startOfDay(dateValue) {
   const date = new Date(dateValue);
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -860,4 +878,189 @@ export function buildMemberContextInsight(member, growth, lang = "zh") {
   }
 
   return buildAdultContextInsight(member, lang);
+}
+
+function buildAdultChangeDetections(member, lang = "zh") {
+  if (!member) {
+    return [];
+  }
+
+  const changes = [];
+  const name = member.name;
+  const weightRecords = (member.healthDataRecords || []).filter((record) => record.category === "weight");
+  const stepsRecords = (member.healthDataRecords || []).filter((record) => record.category === "steps");
+  const sleepRecords = (member.healthDataRecords || []).filter((record) => record.category === "sleep");
+  const restingHrRecords = (member.healthDataRecords || []).filter((record) => record.category === "resting_heart_rate");
+  const workouts = member.exerciseLogs || [];
+  const weightDelta7d = buildDelta(weightRecords, (record) => record.value, (record) => record.recordedAt, 7);
+  const recentSteps7d = average(recentItems(stepsRecords, (record) => record.recordedAt, 7), (record) => record.value);
+  const previousSteps7d = average(previousItems(stepsRecords, (record) => record.recordedAt, 7), (record) => record.value);
+  const recentSleep7d = average(recentItems(sleepRecords, (record) => record.recordedAt, 7), (record) => record.value);
+  const previousSleep7d = average(previousItems(sleepRecords, (record) => record.recordedAt, 7), (record) => record.value);
+  const recentHr7d = average(recentItems(restingHrRecords, (record) => record.recordedAt, 7), (record) => record.value);
+  const previousHr7d = average(previousItems(restingHrRecords, (record) => record.recordedAt, 7), (record) => record.value);
+  const recentWorkouts3d = recentItems(workouts, (entry) => entry.performedAt, 3).length;
+
+  if (weightDelta7d !== null && weightDelta7d <= -2) {
+    changes.push({
+      id: `${member.id}-fast-weight-loss`,
+      severity: "follow-up",
+      member: name,
+      group: "things_to_check",
+      title: lang === "en" ? `${name} lost weight quickly this week` : `${name} 這週體重下降得較快`,
+      detail:
+        lang === "en"
+          ? `${Math.abs(weightDelta7d)} kg down in 7 days is faster than usual. Check recovery, meals, and overall energy.`
+          : `7 日內下降 ${Math.abs(weightDelta7d)} kg 會比平時快，值得順手留意恢復、飲食同整體精神狀態。`
+    });
+  } else if (weightDelta7d !== null && weightDelta7d >= 1.5) {
+    changes.push({
+      id: `${member.id}-fast-weight-gain`,
+      severity: "attention",
+      member: name,
+      group: "notable_changes",
+      title: lang === "en" ? `${name} is up noticeably this week` : `${name} 這週體重升得較明顯`,
+      detail:
+        lang === "en"
+          ? `Weight is up ${weightDelta7d} kg in the last 7 days. A quick review of meals, routine, and water swings may help.`
+          : `最近 7 日上升 ${weightDelta7d} kg，可先快速回看飲食、作息同水分波動。`
+    });
+  }
+
+  if (!recentWorkouts3d) {
+    changes.push({
+      id: `${member.id}-no-workout`,
+      severity: "info",
+      member: name,
+      group: "things_to_check",
+      title: lang === "en" ? `${name} has no recent workouts` : `${name} 最近未有運動記錄`,
+      detail:
+        lang === "en"
+          ? "No workouts were logged in the last 3 days. One lighter session is enough to restart the rhythm."
+          : "最近 3 天未有運動記錄，補一節輕量運動已經足夠重新啟動節奏。"
+    });
+  }
+
+  if (recentSteps7d > 0 && previousSteps7d > 0 && recentSteps7d < previousSteps7d * 0.7) {
+    changes.push({
+      id: `${member.id}-steps-drop`,
+      severity: "attention",
+      member: name,
+      group: "notable_changes",
+      title: lang === "en" ? `${name}'s step count dropped` : `${name} 的步數明顯下跌`,
+      detail:
+        lang === "en"
+          ? `Recent daily steps are about ${Math.round(((previousSteps7d - recentSteps7d) / previousSteps7d) * 100)}% lower than the previous week.`
+          : `最近每日步數比前一週大約少咗 ${Math.round(((previousSteps7d - recentSteps7d) / previousSteps7d) * 100)}%。`
+    });
+  }
+
+  if (recentSleep7d > 0 && previousSleep7d > 0 && recentSleep7d < previousSleep7d - 0.8) {
+    changes.push({
+      id: `${member.id}-sleep-drop`,
+      severity: "attention",
+      member: name,
+      group: "things_to_check",
+      title: lang === "en" ? `${name}'s sleep is lower this week` : `${name} 這週睡眠偏低`,
+      detail:
+        lang === "en"
+          ? `Average sleep is down by ${round(previousSleep7d - recentSleep7d)} hours compared with the previous week.`
+          : `平均睡眠比前一週少咗 ${round(previousSleep7d - recentSleep7d)} 小時。`
+    });
+  }
+
+  if (recentHr7d > 0 && previousHr7d > 0 && recentHr7d > previousHr7d + 4) {
+    changes.push({
+      id: `${member.id}-resting-hr-up`,
+      severity: "follow-up",
+      member: name,
+      group: "things_to_check",
+      title: lang === "en" ? `${name}'s resting heart rate is up` : `${name} 的靜止心率上升`,
+      detail:
+        lang === "en"
+          ? `Resting heart rate is about ${round(recentHr7d - previousHr7d)} bpm higher than the previous week.`
+          : `靜止心率比前一週大約高咗 ${round(recentHr7d - previousHr7d)} 次/分鐘。`
+    });
+  }
+
+  return changes;
+}
+
+function buildRyanChangeDetections(growth, lang = "zh") {
+  if (!growth) {
+    return [];
+  }
+
+  const changes = [];
+  const latestMeasurementDate = growth?.summary?.latestMeasurement?.measuredAt;
+  const measurementGap = daysSince(latestMeasurementDate);
+  const velocity = growth?.summary?.heightVelocityCmPerMonth;
+  const measurements = sortByDate(growth?.measurements || [], (entry) => entry.measuredAt);
+
+  if (measurementGap !== null && measurementGap >= 10) {
+    changes.push({
+      id: "ryan-measurement-gap",
+      severity: measurementGap >= 21 ? "follow-up" : "attention",
+      member: "Ryan",
+      group: "things_to_check",
+      title: lang === "en" ? "Ryan has not been measured recently" : "Ryan 已一段時間未有新量度",
+      detail:
+        lang === "en"
+          ? `It has been ${measurementGap} days since the last height and weight record. A fresh check will make growth tracking more reliable.`
+          : `距離上次身高體重量度已過咗 ${measurementGap} 日，補一筆新資料會令成長追蹤更可靠。`
+    });
+  }
+
+  if (measurements.length >= 4) {
+    const recentWindow = measurements.slice(-2);
+    const previousWindow = measurements.slice(-4, -2);
+    const recentGain = recentWindow.length >= 2 ? round(Number(recentWindow[1].heightCm) - Number(recentWindow[0].heightCm)) : null;
+    const previousGain = previousWindow.length >= 2 ? round(Number(previousWindow[1].heightCm) - Number(previousWindow[0].heightCm)) : null;
+
+    if (recentGain !== null && previousGain !== null && recentGain < previousGain - 0.8) {
+      changes.push({
+        id: "ryan-growth-slower",
+        severity: "attention",
+        member: "Ryan",
+        group: "notable_changes",
+        title: lang === "en" ? "Ryan's recent height pace is slower" : "Ryan 最近身高增長較慢",
+        detail:
+          lang === "en"
+            ? "The most recent growth pace is slower than earlier records, so the next few checks matter more."
+            : "最近幾次身高增加速度比之前慢，之後幾次量度會更值得留意。"
+      });
+    }
+  }
+
+  if (velocity !== null && velocity !== undefined && velocity > 0) {
+    changes.push({
+      id: "ryan-growth-status",
+      severity: growth?.summary?.status === "on_track" ? "info" : "attention",
+      member: "Ryan",
+      group: "notable_changes",
+      title: lang === "en" ? "Ryan's current growth pace is readable" : "Ryan 目前成長速度已有趨勢可讀",
+      detail:
+        lang === "en"
+          ? `Current height velocity is about ${velocity} cm per month, which helps the app spot future changes more clearly.`
+          : `目前身高速度約為每月 ${velocity} cm，之後會更容易看出趨勢有冇變化。`
+    });
+  }
+
+  return changes;
+}
+
+export function buildChangeDetections({ alex, amelie, growth }, lang = "zh") {
+  return [
+    ...buildRyanChangeDetections(growth, lang),
+    ...buildAdultChangeDetections(alex, lang),
+    ...buildAdultChangeDetections(amelie, lang)
+  ].slice(0, 8);
+}
+
+export function buildMemberChangeDetections(member, growth, lang = "zh") {
+  if (member?.id === "ryan") {
+    return buildRyanChangeDetections(growth, lang);
+  }
+
+  return buildAdultChangeDetections(member, lang);
 }
