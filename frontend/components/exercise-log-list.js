@@ -1,4 +1,4 @@
-import { formatChineseDate } from "../lib/format";
+import { formatChineseDate, formatNumber, formatValueWithUnit } from "../lib/format";
 
 export function ExerciseLogList({ logs }) {
   if (!logs.length) {
@@ -24,11 +24,15 @@ export function ExerciseLogList({ logs }) {
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-2xl bg-white/80 px-4 py-3">
                 <p className="text-xs uppercase tracking-[0.18em] text-slate-400">時長</p>
-                <p className="mt-1 font-semibold text-ink">{log.durationMinutes || 0} 分鐘</p>
+                <p className="mt-1 font-semibold text-ink">{formatNumber(log.durationMinutes || 0, 1)} 分鐘</p>
               </div>
               <div className="rounded-2xl bg-white/80 px-4 py-3">
                 <p className="text-xs uppercase tracking-[0.18em] text-slate-400">卡路里</p>
-                <p className="mt-1 font-semibold text-ink">{log.caloriesBurned || 0} kcal</p>
+                <p className="mt-1 font-semibold text-ink">
+                  {formatValueWithUnit(log.caloriesBurned || 0, "kcal", {
+                    maximumFractionDigits: 1
+                  })}
+                </p>
               </div>
             </div>
           </div>

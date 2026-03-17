@@ -8,16 +8,8 @@ import { MetricHistoryChart } from "../../../components/metric-history-chart";
 import { MiniMetricChart } from "../../../components/mini-metric-chart";
 import { ProfileManagementPanel } from "../../../components/profile-management-panel";
 import { calculateBmi } from "../../../lib/bmi";
-import { formatChineseDate } from "../../../lib/format";
+import { formatChineseDate, formatMetric, formatValueWithUnit } from "../../../lib/format";
 import { getFamilyMember, getGrowthTracking } from "../../../lib/api";
-
-function formatMetricValue(metric, emptyLabel = "未填寫") {
-  if (!metric || metric.value === null || metric.value === undefined) {
-    return emptyLabel;
-  }
-
-  return `${metric.value} ${metric.unit || ""}`.trim();
-}
 
 function pickSecondaryTrend(metricTrends = {}) {
   const candidates = [
@@ -47,7 +39,7 @@ function formatDelta(trend) {
     return "與 30 天基準相若";
   }
 
-  return `${trend.delta > 0 ? "+" : ""}${trend.delta} ${trend.unit}`;
+  return `${trend.delta > 0 ? "+" : ""}${formatValueWithUnit(trend.delta, trend.unit)}`;
 }
 
 export async function generateMetadata({ params }) {
@@ -191,11 +183,19 @@ export default async function FamilyMemberDetailPage({ params }) {
             </div>
             <div className="glass-panel rounded-[28px] p-6 shadow-glass">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新體重</p>
-              <p className="mt-2 text-3xl font-semibold text-ink">{formatMetricValue(dashboard?.cards?.latestWeight || member.latestMetrics?.weight)}</p>
+              <p className="mt-2 text-3xl font-semibold text-ink">
+                {formatMetric(dashboard?.cards?.latestWeight || member.latestMetrics?.weight, {
+                  emptyLabel: "未填寫"
+                })}
+              </p>
             </div>
             <div className="glass-panel rounded-[28px] p-6 shadow-glass">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新步數</p>
-              <p className="mt-2 text-3xl font-semibold text-ink">{formatMetricValue(dashboard?.cards?.latestSteps || member.latestMetrics?.steps)}</p>
+              <p className="mt-2 text-3xl font-semibold text-ink">
+                {formatMetric(dashboard?.cards?.latestSteps || member.latestMetrics?.steps, {
+                  emptyLabel: "未填寫"
+                })}
+              </p>
             </div>
           </div>
 
@@ -242,6 +242,21 @@ export default async function FamilyMemberDetailPage({ params }) {
             )}
           </div>
 
+          <div className="grid gap-5 lg:grid-cols-2">
+            <MetricHistoryChart
+              items={stepsHistory}
+              color="#34a853"
+              label="每日步數"
+              unit="steps"
+            />
+            <MetricHistoryChart
+              items={sleepHistory}
+              color="#5c6ac4"
+              label="每日睡眠"
+              unit="hours"
+            />
+          </div>
+
           <div className="glass-panel rounded-[28px] p-6 shadow-glass">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -271,17 +286,30 @@ export default async function FamilyMemberDetailPage({ params }) {
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
                   <div className="rounded-2xl bg-white/80 p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新身高</p>
-                    <p className="mt-1 font-semibold text-ink">{formatMetricValue(member.latestMetrics?.height)}</p>
+                    <p className="mt-1 font-semibold text-ink">
+                      {formatMetric(member.latestMetrics?.height, {
+                        emptyLabel: "未填寫"
+                      })}
+                    </p>
                   </div>
                   <div className="rounded-2xl bg-white/80 p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新靜止心率</p>
                     <p className="mt-1 font-semibold text-ink">
-                      {formatMetricValue(dashboard?.cards?.latestRestingHeartRate || member.latestMetrics?.resting_heart_rate)}
+                      {formatMetric(
+                        dashboard?.cards?.latestRestingHeartRate || member.latestMetrics?.resting_heart_rate,
+                        {
+                          emptyLabel: "未填寫"
+                        }
+                      )}
                     </p>
                   </div>
                   <div className="rounded-2xl bg-white/80 p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-400">最新睡眠</p>
-                    <p className="mt-1 font-semibold text-ink">{formatMetricValue(dashboard?.cards?.latestSleep || member.latestMetrics?.sleep)}</p>
+                    <p className="mt-1 font-semibold text-ink">
+                      {formatMetric(dashboard?.cards?.latestSleep || member.latestMetrics?.sleep, {
+                        emptyLabel: "未填寫"
+                      })}
+                    </p>
                   </div>
                 </div>
               </div>

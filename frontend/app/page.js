@@ -1,16 +1,8 @@
 import Link from "next/link";
 import { MetricHistoryChart } from "../components/metric-history-chart";
 import { MiniMetricChart } from "../components/mini-metric-chart";
-import { formatChineseDate } from "../lib/format";
+import { formatChineseDate, formatMetric, formatValueWithUnit } from "../lib/format";
 import { getFamilyMember, getFamilyMembers, getGrowthTracking } from "../lib/api";
-
-function formatMetric(metric, emptyLabel = "未有資料") {
-  if (!metric || metric.value === null || metric.value === undefined) {
-    return emptyLabel;
-  }
-
-  return `${metric.value} ${metric.unit || ""}`.trim();
-}
 
 function buildTrendInsight(items, label) {
   if (!items || items.length < 2) {
@@ -37,7 +29,7 @@ function formatDeltaLabel(trend) {
     return "與 30 天基準相若";
   }
 
-  return `${trend.delta > 0 ? "+" : ""}${trend.delta} ${trend.unit}`;
+  return `${trend.delta > 0 ? "+" : ""}${formatValueWithUnit(trend.delta, trend.unit)}`;
 }
 
 export default async function HomePage() {
@@ -192,6 +184,13 @@ export default async function HomePage() {
               unit="bpm"
               compact
             />
+            <MiniMetricChart
+              items={alex?.metricTrends?.heart_rate || []}
+              color="#ff8a65"
+              label="心率"
+              unit="bpm"
+              compact
+            />
             <MiniMetricChart items={alexWeightTrend} color="#0071e3" label="體重" unit="kg" compact />
           </div>
         </div>
@@ -213,9 +212,31 @@ export default async function HomePage() {
               unit="bpm"
               compact
             />
+            <MiniMetricChart
+              items={amelie?.metricTrends?.heart_rate || []}
+              color="#ff8a65"
+              label="心率"
+              unit="bpm"
+              compact
+            />
             <MiniMetricChart items={amelieWeightTrend} color="#0071e3" label="體重" unit="kg" compact />
           </div>
         </div>
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <MetricHistoryChart
+          items={alexStepsTrend}
+          color="#34a853"
+          label="Alex 每日步數"
+          unit="steps"
+        />
+        <MetricHistoryChart
+          items={amelieSleepTrend}
+          color="#5c6ac4"
+          label="Amelie 睡眠時間"
+          unit="hours"
+        />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">

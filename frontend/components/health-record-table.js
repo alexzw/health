@@ -1,11 +1,13 @@
-import { formatCategoryLabel, formatChineseDate } from "../lib/format";
+import { formatCategoryLabel, formatChineseDate, formatValueWithUnit } from "../lib/format";
 
 function formatValue(record) {
   if (record.value === null || record.value === undefined) {
     return "未填寫";
   }
 
-  return `${record.value} ${record.unit || ""}`.trim();
+  return formatValueWithUnit(record.value, record.unit, {
+    emptyLabel: "未填寫"
+  });
 }
 
 export function HealthRecordTable({ records }) {
