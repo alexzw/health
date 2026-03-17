@@ -8,6 +8,13 @@ import { formatMetric, formatRelativeDate, formatValueWithUnit } from "../lib/fo
 import { getFamilyMember, getFamilyMembers, getGrowthTracking } from "../lib/api";
 import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../lib/i18n";
 import {
+  buildFamilyHealthScore,
+  buildMilestones,
+  buildProactiveInsights,
+  buildReminders,
+  buildTodaySummary
+} from "../lib/daily-engagement";
+import {
   buildMetricSeriesFromRecords,
   filterItemsByRange,
   getTimeRangeLabel,
@@ -108,6 +115,12 @@ export default async function HomePage({ searchParams }) {
     ...(amelieDashboard?.insights || []).slice(0, 1),
     ...(growth?.insights || []).slice(0, 1)
   ].filter(Boolean);
+  const engagementContext = { alex, amelie, growth };
+  const todaySummary = buildTodaySummary(engagementContext, lang);
+  const proactiveInsights = buildProactiveInsights(engagementContext, lang);
+  const reminders = buildReminders(engagementContext, lang);
+  const milestones = buildMilestones(engagementContext, lang);
+  const familyHealthScore = buildFamilyHealthScore(engagementContext);
 
   const profileCards = [
     {
@@ -142,53 +155,42 @@ export default async function HomePage({ searchParams }) {
     <section className="space-y-8">
       <div className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
         <div className="panel-hero rounded-[40px] px-7 py-8 sm:px-10 sm:py-10">
-            <p className="section-kicker">{t(lang, "家庭總覽", "Family Overview")}</p>
+            <p className="section-kicker">{t(lang, "Today Summary", "Today Summary")}</p>
           <h1 className="display-heading mt-4 text-5xl font-semibold text-ink sm:text-6xl">
-            {t(lang, "Ryan 成長追蹤", "Ryan Growth Tracking")}
+            {t(lang, "每日家庭健康總結", "Your family health at a glance")}
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600">
             {t(
               lang,
-              "先看 Ryan 最新身高、體重與成長變化，再延伸查看大人的體重趨勢與今天活動。",
-              "Start with Ryan's latest growth, then review adult weight trends and today's activity."
+              "每天先看 Ryan 的成長狀態、Alex 和 Amelie 今日活動，以及系統主動發現的重點提醒。",
+              "Open each day to see Ryan's growth status, Alex and Amelie's activity, and the most important proactive insight."
             )}
           </p>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div className="metric-band rounded-[24px] p-5">
-              <p className="eyebrow-label">{t(lang, "最新身高", "Latest Height")}</p>
-              <p className="mt-2 text-3xl font-semibold text-ink">
-                {latestGrowth ? `${latestGrowth.heightCm} cm` : t(lang, "未有資料", "No data yet")}
-              </p>
+              <p className="eyebrow-label">Ryan</p>
+              <p className="mt-2 text-xl font-semibold text-ink">{todaySummary.ryan}</p>
               <p className="mt-2 text-sm text-slate-500">
-                {latestGrowth
-                  ? buildMetricStatus({ recordedAt: latestGrowth.measuredAt }, lang)
-                  : t(lang, "先新增第一筆成長記錄", "Add the first growth record")}
+                {growth?.summary?.heightVelocityCmPerMonth !== null && growth?.summary?.heightVelocityCmPerMonth !== undefined
+                  ? t(lang, `成長速度 ${growth.summary.heightVelocityCmPerMonth} cm / 月`, `Growth velocity ${growth.summary.heightVelocityCmPerMonth} cm / month`)
+                  : buildMetricStatus({ recordedAt: latestGrowth?.measuredAt }, lang)}
               </p>
             </div>
             <div className="metric-band rounded-[24px] p-5">
-              <p className="eyebrow-label">{t(lang, "最新體重", "Latest Weight")}</p>
-              <p className="mt-2 text-3xl font-semibold text-ink">
-                {latestGrowth ? `${latestGrowth.weightKg} kg` : t(lang, "未有資料", "No data yet")}
-              </p>
-              <p className="mt-2 text-sm text-slate-500">
-                {latestGrowth
-                  ? t(lang, "與最新身高同日量度", "Measured together with the latest height")
-                  : t(lang, "先新增第一筆成長記錄", "Add the first growth record")}
-              </p>
+              <p className="eyebrow-label">Alex</p>
+              <p className="mt-2 text-xl font-semibold text-ink">{todaySummary.alex}</p>
+              <p className="mt-2 text-sm text-slate-500">{buildMetricStatus(alexDashboard?.cards?.latestSteps || alex?.latestMetrics?.steps, lang)}</p>
             </div>
             <div className="metric-band rounded-[24px] p-5">
-              <p className="eyebrow-label">{t(lang, "成長變化", "Growth Change")}</p>
-              <p className="mt-2 text-3xl font-semibold text-ink">
-                {growthGain !== null
-                  ? `+${formatValueWithUnit(growthGain, "cm", { lang })}`
-                  : t(lang, "未有資料", "No data yet")}
-              </p>
-              <p className="mt-2 text-sm text-slate-500">
-                {growthGain !== null
-                  ? t(lang, "對比第一筆記錄", "Since the first recorded measurement")
-                  : t(lang, "需要至少兩筆成長記錄", "Needs at least two growth records")}
-              </p>
+              <p className="eyebrow-label">Amelie</p>
+              <p className="mt-2 text-xl font-semibold text-ink">{todaySummary.amelie}</p>
+              <p className="mt-2 text-sm text-slate-500">{buildMetricStatus(amelieDashboard?.cards?.latestSteps || amelie?.latestMetrics?.steps, lang)}</p>
+            </div>
+            <div className="metric-band rounded-[24px] p-5">
+              <p className="eyebrow-label">{t(lang, "今日重點", "Key Insight")}</p>
+              <p className="mt-2 text-xl font-semibold text-ink">{proactiveInsights[0]?.title || t(lang, "仍在累積資料", "Still collecting data")}</p>
+              <p className="mt-2 text-sm text-slate-500">{proactiveInsights[0]?.detail || t(lang, "新增更多記錄後，系統會開始主動提醒。", "Add more data and the system will start surfacing proactive guidance.")}</p>
             </div>
           </div>
 
@@ -208,52 +210,27 @@ export default async function HomePage({ searchParams }) {
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
           <div className="soft-card rounded-[30px] p-6">
-            <p className="eyebrow-label">Alex</p>
-            <p className="mt-2 text-3xl font-semibold text-ink">
-              {formatMetric(alexDashboard?.cards?.latestWeight || alex?.latestMetrics?.weight, {
-                lang,
-                emptyLabel: t(lang, "未有資料", "No data yet")
-              })}
-            </p>
-            <p className="mt-3 text-sm text-slate-600">{buildTrendChangeWithRange(alexWeightTrend, "kg", lang, rangeLabel)}</p>
+            <p className="eyebrow-label">{t(lang, "Family Health Score", "Family Health Score")}</p>
+            <p className="mt-2 text-4xl font-semibold text-ink">{familyHealthScore} / 100</p>
             <p className="mt-2 text-sm text-slate-500">
-              {buildMetricStatus(alexDashboard?.cards?.latestWeight || alex?.latestMetrics?.weight, lang)}
+              {t(lang, "綜合活動、體重趨勢、記錄一致性與 Ryan 成長狀態。", "Based on activity, weight trends, consistency, and Ryan's growth status.")}
             </p>
-            <div className="mt-4">
-              <Link href="/family-members/alex#manage" className="button-secondary px-4 py-2 text-sm font-semibold">
-                {t(lang, "+ 新增體重", "+ Add Weight")}
-              </Link>
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
+              <div className="h-full rounded-full bg-blue" style={{ width: `${familyHealthScore}%` }} />
             </div>
           </div>
           <div className="soft-card rounded-[30px] p-6">
-            <p className="eyebrow-label">Amelie</p>
-            <p className="mt-2 text-3xl font-semibold text-ink">
-              {formatMetric(amelieDashboard?.cards?.latestWeight || amelie?.latestMetrics?.weight, {
-                lang,
-                emptyLabel: t(lang, "未有資料", "No data yet")
-              })}
-            </p>
-            <p className="mt-3 text-sm text-slate-600">{buildTrendChangeWithRange(amelieWeightTrend, "kg", lang, rangeLabel)}</p>
-            <p className="mt-2 text-sm text-slate-500">
-              {buildMetricStatus(amelieDashboard?.cards?.latestWeight || amelie?.latestMetrics?.weight, lang)}
-            </p>
+            <p className="eyebrow-label">{t(lang, "今日可做的事", "Today's Best Actions")}</p>
             <div className="mt-4 flex flex-wrap gap-3">
-              <Link href="/family-members/amelie#manage" className="button-secondary px-4 py-2 text-sm font-semibold">
-                {t(lang, "+ 新增體重", "+ Add Weight")}
+              <Link href="/family-members/alex#manage" className="button-secondary px-4 py-2 text-sm font-semibold">
+                {t(lang, "+ 新增 Alex 體重", "+ Add Alex Weight")}
               </Link>
               <Link href="/family-members/amelie#manage" className="button-secondary px-4 py-2 text-sm font-semibold">
-                {t(lang, "+ 新增運動", "+ Add Workout")}
+                {t(lang, "+ 新增 Amelie 運動", "+ Add Amelie Workout")}
               </Link>
-            </div>
-          </div>
-          <div className="soft-card rounded-[30px] p-6 sm:col-span-2 xl:col-span-1">
-            <p className="eyebrow-label">{t(lang, "今日活動", "Today Activity")}</p>
-            <p className="mt-2 text-2xl font-semibold text-ink">{buildActivitySummary(alex, alexDashboard, lang)}</p>
-            <p className="mt-3 text-sm text-slate-600">{buildActivitySummary(amelie, amelieDashboard, lang)}</p>
-            <p className="mt-3 text-sm text-slate-500">
-              {t(lang, "依 Apple Health 最新同步更新。", "Updated from the latest Apple Health sync.")}
-            </p>
-            <div className="mt-4">
+              <Link href="/family-members/ryan#manage-growth" className="button-secondary px-4 py-2 text-sm font-semibold">
+                {t(lang, "+ 新增 Ryan 成長記錄", "+ Add Ryan Growth")}
+              </Link>
               <Link href="/integrations" className="button-secondary px-4 py-2 text-sm font-semibold">
                 {t(lang, "同步 Apple Health", "Sync Apple Health")}
               </Link>
@@ -409,10 +386,10 @@ export default async function HomePage({ searchParams }) {
           </div>
 
           <div className="soft-card rounded-[34px] p-6 sm:p-7">
-            <p className="section-kicker">{t(lang, "重點提醒", "Insights")}</p>
+            <p className="section-kicker">{t(lang, "主動提醒", "Proactive Insights")}</p>
             <div className="mt-5 grid gap-4">
-              {homeInsights.length ? (
-                homeInsights.map((insight) => (
+              {proactiveInsights.length ? (
+                proactiveInsights.map((insight) => (
                   <div key={`${insight.title}-${insight.description || insight.detail}`} className="metric-band rounded-[24px] p-5">
                     <p className="text-base font-semibold text-ink">{translateDynamicText(lang, insight.title)}</p>
                     <p className="mt-2 text-sm leading-6 text-slate-600">
@@ -438,6 +415,50 @@ export default async function HomePage({ searchParams }) {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <div className="soft-card rounded-[34px] p-6 sm:p-7">
+          <p className="section-kicker">{t(lang, "里程碑", "Milestones")}</p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-ink">
+            {t(lang, "值得記住的進展", "Progress Worth Celebrating")}
+          </h2>
+          <div className="mt-5 space-y-4">
+            {milestones.length ? (
+              milestones.map((milestone) => (
+                <div key={milestone.title} className="rounded-[24px] border border-emerald-200 bg-emerald-50/80 p-5">
+                  <p className="text-base font-semibold text-emerald-950">{milestone.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-emerald-900/80">{milestone.detail}</p>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50/80 p-5 text-sm text-slate-600">
+                {t(lang, "當你們累積更多進步，這裡會開始出現值得慶祝的 milestone。", "As more progress builds up, this area will start highlighting milestones worth celebrating.")}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="soft-card rounded-[34px] p-6 sm:p-7">
+          <p className="section-kicker">{t(lang, "提醒", "Reminders")}</p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-ink">
+            {t(lang, "避免健康習慣中斷", "Keep the habit alive")}
+          </h2>
+          <div className="mt-5 space-y-4">
+            {reminders.length ? (
+              reminders.map((reminder) => (
+                <div key={reminder.title} className="rounded-[24px] border border-amber-200 bg-amber-50/80 p-5">
+                  <p className="text-base font-semibold text-amber-950">{reminder.title}</p>
+                  <p className="mt-2 text-sm leading-6 text-amber-900/80">{reminder.detail}</p>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-[24px] border border-emerald-200 bg-emerald-50/80 p-5 text-sm text-emerald-900">
+                {t(lang, "目前沒有需要特別追趕的提醒，節奏維持得不錯。", "There are no overdue reminders right now. Your family is keeping a healthy rhythm.")}
+              </div>
+            )}
           </div>
         </div>
       </div>

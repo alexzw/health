@@ -35,6 +35,9 @@ export function GrowthInsights({ growth, lang = "zh" }) {
             `Since the first record, weight has increased by ${growth.summary.totalWeightGainKg} kg.`
           )}
         </p>
+        <p className="mt-3 text-sm leading-6 text-slate-600">
+          {translateDynamicText(lang, growth.summary.summaryText)}
+        </p>
         <div className="mt-6 grid grid-cols-2 gap-3">
           <div className="metric-band rounded-2xl p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t(lang, "最新身高", "Latest Height")}</p>
@@ -46,6 +49,30 @@ export function GrowthInsights({ growth, lang = "zh" }) {
             <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t(lang, "最新體重", "Latest Weight")}</p>
             <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">
               {growth.summary.latestMeasurement.weightKg} kg
+            </p>
+          </div>
+          <div className="metric-band rounded-2xl p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t(lang, "成長速度", "Growth Velocity")}</p>
+            <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">
+              {growth.summary.heightVelocityCmPerMonth !== null && growth.summary.heightVelocityCmPerMonth !== undefined
+                ? `${growth.summary.heightVelocityCmPerMonth} cm/mo`
+                : "—"}
+            </p>
+          </div>
+          <div className="metric-band rounded-2xl p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t(lang, "6 個月預測", "6-Month Estimate")}</p>
+            <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">
+              {growth.summary.predictedHeightInSixMonthsCm !== null && growth.summary.predictedHeightInSixMonthsCm !== undefined
+                ? `${growth.summary.predictedHeightInSixMonthsCm} cm`
+                : "—"}
+            </p>
+          </div>
+          <div className="metric-band rounded-2xl p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t(lang, "目前狀態", "Current Status")}</p>
+            <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">
+              {growth.summary.status === "on_track"
+                ? t(lang, "穩定範圍", "Within normal range")
+                : t(lang, "建議留意", "Needs attention")}
             </p>
           </div>
         </div>
