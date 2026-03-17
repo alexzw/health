@@ -96,8 +96,8 @@ export function CoachActionsPanel({ memberId, lang = "zh", goals = [] }) {
   return (
     <section className="space-y-5">
       <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
-        <div className="glass-panel rounded-[32px] p-7 shadow-glass">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
+        <div className="soft-card rounded-[32px] p-7">
+          <p className="section-kicker">
             {t(lang, "向教練提問", "Ask the Coach")}
           </p>
           <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
@@ -124,15 +124,15 @@ export function CoachActionsPanel({ memberId, lang = "zh", goals = [] }) {
           </form>
           {askError ? <p className="mt-3 text-sm text-rose-600">{askError}</p> : null}
           {answer?.reply ? (
-            <div className="mt-5 rounded-[24px] bg-white/80 p-5">
+            <div className="metric-band mt-5 rounded-[24px] p-5">
               <p className="text-sm font-semibold text-ink">{answer.reply.answer}</p>
               <p className="mt-3 text-sm leading-6 text-slate-600">{answer.reply.followUp}</p>
             </div>
           ) : null}
         </div>
 
-        <div className="glass-panel rounded-[32px] p-7 shadow-glass">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
+        <div className="soft-card rounded-[32px] p-7">
+          <p className="section-kicker">
             {t(lang, "每週目標", "Weekly Goals")}
           </p>
           <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
@@ -142,7 +142,7 @@ export function CoachActionsPanel({ memberId, lang = "zh", goals = [] }) {
             {goals.map((goal) => {
               const draft = goalDrafts[goal.id];
               return (
-                <div key={goal.id} className="rounded-[24px] bg-white/80 p-5">
+                <div key={goal.id} className="metric-band rounded-[24px] p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-semibold text-ink">{goal.title}</p>

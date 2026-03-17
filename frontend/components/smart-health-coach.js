@@ -2,7 +2,7 @@ import { t } from "../lib/i18n";
 
 function Section({ title, children }) {
   return (
-    <div className="rounded-[24px] bg-white/80 p-5">
+    <div className="metric-band rounded-[24px] p-5">
       <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{title}</p>
       <div className="mt-3 space-y-2 text-sm leading-6 text-slate-600">{children}</div>
     </div>
@@ -17,7 +17,7 @@ export function SmartHealthCoach({ coach, lang = "zh" }) {
   return (
     <section className="space-y-5">
       <div>
-        <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
+        <p className="section-kicker">
           {t(lang, "智能健康教練", "Smart Health Coach")}
         </p>
         <h2 className="mt-2 text-4xl font-semibold tracking-[-0.05em] text-ink">
@@ -25,7 +25,7 @@ export function SmartHealthCoach({ coach, lang = "zh" }) {
         </h2>
       </div>
 
-      <div className="glass-panel rounded-[32px] p-7 shadow-glass">
+      <div className="soft-card rounded-[32px] p-7">
         <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-5">
             <Section title={t(lang, "目前目標", "Current Goal")}>

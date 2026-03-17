@@ -15,14 +15,18 @@ function formatValue(record, lang) {
 export function HealthRecordTable({ records, lang = "zh" }) {
   if (!records.length) {
     return (
-      <div className="glass-panel rounded-[28px] border border-dashed border-line p-6 text-sm text-slate-500">
-        {t(lang, "這個家庭成員暫時還沒有健康紀錄。", "This family member has no health records yet.")}
+      <div className="soft-card rounded-[28px] border border-dashed border-line p-6 text-sm text-slate-500">
+        {t(
+          lang,
+          "仍未有人手健康記錄。去下方新增體重、睡眠或心率後，就會在這裡顯示。",
+          "No manual health records yet. Add weight, sleep, or heart rate records below and they will appear here."
+        )}
       </div>
     );
   }
 
   return (
-    <div className="glass-panel overflow-hidden rounded-[28px] shadow-glass">
+    <div className="soft-card overflow-hidden rounded-[28px]">
       <table className="min-w-full text-left text-sm">
         <thead className="bg-white/60 text-ink">
           <tr>

@@ -36,7 +36,7 @@ function createChartPoints(measurements, key, width, height, padding) {
 export function GrowthChart({ measurements, metric, color, label, unit, lang = "zh" }) {
   if (!measurements?.length) {
     return (
-      <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+      <div className="soft-card rounded-[28px] p-6">
         <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{label}</p>
         <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">{t(lang, "暫時未有資料", "No data yet")}</h3>
         <p className="mt-4 text-sm leading-6 text-slate-500">
@@ -53,13 +53,14 @@ export function GrowthChart({ measurements, metric, color, label, unit, lang = "
   const latestMeasurement = measurements[measurements.length - 1];
 
   return (
-    <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+    <div className="soft-card rounded-[28px] p-6">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{label}</p>
           <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
             {latestMeasurement[metric]} {unit}
           </h3>
+          <p className="mt-2 text-sm text-slate-500">{t(lang, "時間範圍：從第一筆記錄到現在", "Timeframe: from first record to now")}</p>
         </div>
         <p className="text-sm text-slate-500">{formatDate(latestMeasurement.measuredAt, lang)}</p>
       </div>

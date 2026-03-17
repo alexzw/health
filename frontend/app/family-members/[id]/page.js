@@ -11,7 +11,7 @@ import { CoachActionsPanel } from "../../../components/coach-actions-panel";
 import { ProfileManagementPanel } from "../../../components/profile-management-panel";
 import { SmartHealthCoach } from "../../../components/smart-health-coach";
 import { calculateBmi } from "../../../lib/bmi";
-import { formatChineseDate, formatMetric, formatValueWithUnit } from "../../../lib/format";
+import { formatChineseDate, formatMetric, formatRelativeDate, formatValueWithUnit } from "../../../lib/format";
 import { getCoachInsights, getFamilyMember, getGrowthTracking, getWeeklyGoals } from "../../../lib/api";
 import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../../../lib/i18n";
 
@@ -44,6 +44,14 @@ function formatDelta(trend, lang) {
   }
 
   return `${trend.delta > 0 ? "+" : ""}${formatValueWithUnit(trend.delta, trend.unit, { lang })}`;
+}
+
+function getRoleLabel(member, lang) {
+  return member.familyRole === "Father"
+    ? t(lang, "父親", "Father")
+    : member.familyRole === "Mother"
+      ? t(lang, "母親", "Mother")
+      : t(lang, "孩子", "Child");
 }
 
 export async function generateMetadata({ params }) {
@@ -105,6 +113,22 @@ export default async function FamilyMemberDetailPage({ params }) {
     (record) => !String(record.notes || "").startsWith("由 ")
   );
   const hasGrowthMeasurements = Boolean(growth?.measurements?.length);
+  const latestSyncMetric =
+    dashboard?.cards?.latestSleep ||
+    dashboard?.cards?.latestSteps ||
+    member.latestMetrics?.weight ||
+    member.latestMetrics?.height;
+  const heroSubtitle = growth
+    ? t(
+        lang,
+        "將 Ryan 的身高、體重與成長提醒集中喺同一頁面。",
+        "A focused view of Ryan's height, weight, and growth insights."
+      )
+    : t(
+        lang,
+        "先看最新身體指標，再往下查看趨勢、教練建議與記錄管理。",
+        "Start with the latest health signals, then review trends, coaching, and record management."
+      );
 
   return (
     <section className="space-y-8">
@@ -115,16 +139,11 @@ export default async function FamilyMemberDetailPage({ params }) {
       <div className="panel-hero rounded-[40px] p-8 lg:p-10">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="section-kicker">
-              {member.familyRole === "Father"
-                ? t(lang, "爸爸", "Father")
-                : member.familyRole === "Mother"
-                  ? t(lang, "媽媽", "Mother")
-                  : t(lang, "孩子", "Child")}
-            </p>
+            <p className="section-kicker">{getRoleLabel(member, lang)}</p>
             <h1 className="display-heading mt-3 text-5xl font-semibold text-ink sm:text-6xl">
               {member.name}
             </h1>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">{heroSubtitle}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="metric-band rounded-2xl px-4 py-3 text-sm text-ink">
@@ -154,9 +173,9 @@ export default async function FamilyMemberDetailPage({ params }) {
       {growth ? (
         <div className="space-y-5">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Ryan Growth Tracking</p>
+            <p className="section-kicker">{t(lang, "Ryan 成長追蹤", "Ryan Growth Tracking")}</p>
             <h2 className="mt-2 text-4xl font-semibold tracking-[-0.05em] text-ink">
-              Growth Summary and Charts
+              {t(lang, "成長摘要與圖表", "Growth Summary and Charts")}
             </h2>
           </div>
           <GrowthInsights growth={growth} lang={lang} />
@@ -180,12 +199,21 @@ export default async function FamilyMemberDetailPage({ params }) {
               />
             </div>
           ) : (
-            <div className="glass-panel rounded-[28px] p-6 shadow-glass">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{t(lang, "成長圖表", "Growth Charts")}</p>
-              <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">{t(lang, "暫時未有圖表資料", "No chart data yet")}</h3>
+            <div className="soft-card rounded-[28px] p-6">
+              <p className="section-kicker">{t(lang, "成長圖表", "Growth Charts")}</p>
+              <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
+                {t(lang, "Ryan 仍未有足夠成長資料", "Ryan needs more growth data")}
+              </h3>
               <p className="mt-4 text-sm leading-6 text-slate-500">
-                {t(lang, "Ryan 的身高或體重有可用測量後，這裡就會顯示圖表。", "Ryan's chart will appear once at least one usable height or weight measurement is available.")}
+                {t(
+                  lang,
+                  "先新增身高或體重記錄，之後就可以在這裡看到成長趨勢圖。",
+                  "Add height or weight measurements to unlock Ryan's growth charts here."
+                )}
               </p>
+              <Link href="#manage" className="button-secondary mt-4 px-4 py-2 text-sm font-semibold">
+                {t(lang, "新增成長記錄", "Add Growth Record")}
+              </Link>
             </div>
           )}
         </div>
@@ -197,37 +225,49 @@ export default async function FamilyMemberDetailPage({ params }) {
       {member.familyRole !== "Child" ? (
         <div className="space-y-5">
           <div>
-            <p className="section-kicker">Adult Health Tracking</p>
+            <p className="section-kicker">{t(lang, "成人健康追蹤", "Adult Health Tracking")}</p>
             <h2 className="mt-2 text-4xl font-semibold tracking-[-0.05em] text-ink">
-              Health Summary and Trends
+              {t(lang, "健康摘要與趨勢", "Health Summary and Trends")}
             </h2>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             <div className="soft-card rounded-[28px] p-6">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Health Records</p>
-              <p className="mt-2 text-3xl font-semibold text-ink">{member.totalHealthRecordCount || 0}</p>
-            </div>
-            <div className="soft-card rounded-[28px] p-6">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Workout Records</p>
-              <p className="mt-2 text-3xl font-semibold text-ink">{member.totalExerciseLogCount || 0}</p>
-            </div>
-            <div className="soft-card rounded-[28px] p-6">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Weight</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "最新體重", "Latest Weight")}</p>
               <p className="mt-2 text-3xl font-semibold text-ink">
                 {formatMetric(dashboard?.cards?.latestWeight || member.latestMetrics?.weight, {
                   emptyLabel: t(lang, "未填寫", "Not set"),
                   lang
                 })}
               </p>
+              <p className="mt-2 text-sm text-slate-500">
+                {t(lang, "時間範圍：最近 30 天", "Timeframe: last 30 days")}
+              </p>
             </div>
             <div className="soft-card rounded-[28px] p-6">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Steps</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "今日活動", "Today Activity")}</p>
               <p className="mt-2 text-3xl font-semibold text-ink">
                 {formatMetric(dashboard?.cards?.latestSteps || member.latestMetrics?.steps, {
                   emptyLabel: t(lang, "未填寫", "Not set"),
                   lang
                 })}
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                {t(lang, "依最新同步資料顯示", "Based on the latest synced data")}
+              </p>
+            </div>
+            <div className="soft-card rounded-[28px] p-6">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "每週運動", "Weekly Workouts")}</p>
+              <p className="mt-2 text-3xl font-semibold text-ink">{member.totalExerciseLogCount || 0}</p>
+              <p className="mt-2 text-sm text-slate-500">
+                {t(lang, "已包含手動與 Apple Health 匯入紀錄", "Includes manual and Apple Health workout logs")}
+              </p>
+            </div>
+            <div className="soft-card rounded-[28px] p-6">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "最近同步", "Latest Sync")}</p>
+              <p className="mt-2 text-xl font-semibold text-ink">{formatRelativeDate(latestSyncMetric?.recordedAt, lang)}</p>
+              <p className="mt-2 text-sm text-slate-500">
+                {t(lang, "已同步最近 30 天資料", "Synced data from the last 30 days")}
               </p>
             </div>
           </div>
@@ -257,9 +297,20 @@ export default async function FamilyMemberDetailPage({ params }) {
               <MetricHistoryChart
                 items={secondaryTrend.items}
                 color={secondaryTrend.color}
-                label={secondaryTrend.label}
+                label={
+                  secondaryTrend.key === "steps"
+                    ? t(lang, "每日步數", "Daily Steps")
+                    : secondaryTrend.key === "resting_heart_rate"
+                      ? t(lang, "靜止心率", "Resting Heart Rate")
+                      : secondaryTrend.key === "heart_rate"
+                        ? t(lang, "心率", "Heart Rate")
+                        : t(lang, "睡眠", "Sleep")
+                }
                 unit={secondaryTrend.unit}
                 lang={lang}
+                timeframeLabel={t(lang, "時間範圍：最近 30 天", "Timeframe: last 30 days")}
+                emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")}
+                emptyActionHref="#manage"
               />
             </div>
           ) : null}
@@ -268,69 +319,80 @@ export default async function FamilyMemberDetailPage({ params }) {
             <MetricHistoryChart
               items={stepsHistory}
               color="#34a853"
-              label="Daily Steps"
+              label={t(lang, "每日步數", "Daily Steps")}
               unit="steps"
               lang={lang}
+              timeframeLabel={t(lang, "時間範圍：最近 30 天", "Timeframe: last 30 days")}
+              emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")}
+              emptyActionHref="#manage"
             />
             <MetricHistoryChart
               items={sleepHistory}
               color="#5c6ac4"
-              label="Daily Sleep"
+              label={t(lang, "每日睡眠", "Daily Sleep")}
               unit="hours"
               lang={lang}
+              timeframeLabel={t(lang, "時間範圍：最近 30 天", "Timeframe: last 30 days")}
+              emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")}
+              emptyActionHref="#manage"
             />
           </div>
 
-          <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+          <div className="soft-card rounded-[28px] p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Body Measurement Trends</p>
-                <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">Waist, Hip and Chest</h3>
+                <p className="section-kicker">{t(lang, "圍度變化", "Body Measurement Trends")}</p>
+                <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
+                  {t(lang, "腰圍、臀圍與胸圍", "Waist, Hip and Chest")}
+                </h3>
               </div>
               <p className="text-sm text-slate-500">
                 {t(lang, "比單看體重更適合觀察塑形變化", "Useful for shaping progress beyond scale weight")}
               </p>
             </div>
             <div className="mt-5 grid gap-5 lg:grid-cols-3">
-              <MetricHistoryChart items={waistHistory} color="#ff8a65" label="Waist Trend" unit="cm" lang={lang} />
-              <MetricHistoryChart items={hipHistory} color="#7c4dff" label="Hip Trend" unit="cm" lang={lang} />
-              <MetricHistoryChart items={chestHistory} color="#00a3a3" label="Chest Trend" unit="cm" lang={lang} />
+              <MetricHistoryChart items={waistHistory} color="#ff8a65" label={t(lang, "腰圍趨勢", "Waist Trend")} unit="cm" lang={lang} timeframeLabel={t(lang, "時間範圍：最近 30 天", "Timeframe: last 30 days")} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
+              <MetricHistoryChart items={hipHistory} color="#7c4dff" label={t(lang, "臀圍趨勢", "Hip Trend")} unit="cm" lang={lang} timeframeLabel={t(lang, "時間範圍：最近 30 天", "Timeframe: last 30 days")} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
+              <MetricHistoryChart items={chestHistory} color="#00a3a3" label={t(lang, "胸圍趨勢", "Chest Trend")} unit="cm" lang={lang} timeframeLabel={t(lang, "時間範圍：最近 30 天", "Timeframe: last 30 days")} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
             </div>
           </div>
 
-          <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+          <div className="soft-card rounded-[28px] p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-500">More Charts</p>
-                <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">Apple Health Mini Charts</h3>
+                <p className="section-kicker">{t(lang, "更多圖表", "More Charts")}</p>
+                <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">{t(lang, "Apple Health 迷你圖表", "Apple Health Mini Charts")}</h3>
               </div>
               <p className="text-sm text-slate-500">{t(lang, "看更多日常變化", "See more day-to-day changes")}</p>
             </div>
             <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <MiniMetricChart items={stepsHistory} color="#34a853" label="Steps" unit="steps" compact lang={lang} />
-              <MiniMetricChart items={sleepHistory} color="#5c6ac4" label="Sleep" unit="hours" compact lang={lang} />
+              <MiniMetricChart items={stepsHistory} color="#34a853" label={t(lang, "步數", "Steps")} unit="steps" compact lang={lang} timeframeLabel={t(lang, "最近 30 天", "Last 30 days")} emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")} emptyActionHref="#manage" />
+              <MiniMetricChart items={sleepHistory} color="#5c6ac4" label={t(lang, "睡眠", "Sleep")} unit="hours" compact lang={lang} timeframeLabel={t(lang, "最近 30 天", "Last 30 days")} emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")} emptyActionHref="#manage" />
               <MiniMetricChart
                 items={restingHeartRateHistory}
                 color="#ff6b57"
-                label="Resting Heart Rate"
+                label={t(lang, "靜止心率", "Resting Heart Rate")}
                 unit="bpm"
                 compact
                 lang={lang}
+                timeframeLabel={t(lang, "最近 30 天", "Last 30 days")}
+                emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")}
+                emptyActionHref="#manage"
               />
-              <MiniMetricChart items={heartRateHistory} color="#ff8a65" label="Heart Rate" unit="bpm" compact lang={lang} />
-              <MiniMetricChart items={waistHistory} color="#ff8a65" label="Waist" unit="cm" compact lang={lang} />
-              <MiniMetricChart items={hipHistory} color="#7c4dff" label="Hip" unit="cm" compact lang={lang} />
-              <MiniMetricChart items={chestHistory} color="#00a3a3" label="Chest" unit="cm" compact lang={lang} />
+              <MiniMetricChart items={heartRateHistory} color="#ff8a65" label={t(lang, "心率", "Heart Rate")} unit="bpm" compact lang={lang} timeframeLabel={t(lang, "最近 30 天", "Last 30 days")} emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")} emptyActionHref="#manage" />
+              <MiniMetricChart items={waistHistory} color="#ff8a65" label={t(lang, "腰圍", "Waist")} unit="cm" compact lang={lang} timeframeLabel={t(lang, "最近 30 天", "Last 30 days")} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
+              <MiniMetricChart items={hipHistory} color="#7c4dff" label={t(lang, "臀圍", "Hip")} unit="cm" compact lang={lang} timeframeLabel={t(lang, "最近 30 天", "Last 30 days")} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
+              <MiniMetricChart items={chestHistory} color="#00a3a3" label={t(lang, "胸圍", "Chest")} unit="cm" compact lang={lang} timeframeLabel={t(lang, "最近 30 天", "Last 30 days")} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
             </div>
           </div>
 
           <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="space-y-5">
               <div className="soft-card rounded-[28px] p-6">
-                <p className="section-kicker">Body Metrics</p>
+                <p className="section-kicker">{t(lang, "身體指標", "Body Metrics")}</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
                   <div className="metric-band rounded-2xl p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Height</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "最新身高", "Latest Height")}</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(member.latestMetrics?.height, {
                         emptyLabel: t(lang, "未填寫", "Not set"),
@@ -339,7 +401,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                     </p>
                   </div>
                   <div className="metric-band rounded-2xl p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Resting HR</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "最新靜止心率", "Latest Resting HR")}</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(
                         dashboard?.cards?.latestRestingHeartRate || member.latestMetrics?.resting_heart_rate,
@@ -351,7 +413,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                     </p>
                   </div>
                   <div className="metric-band rounded-2xl p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Sleep</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "最新睡眠", "Latest Sleep")}</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(dashboard?.cards?.latestSleep || member.latestMetrics?.sleep, {
                         emptyLabel: t(lang, "未填寫", "Not set"),
@@ -360,7 +422,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                     </p>
                   </div>
                   <div className="metric-band rounded-2xl p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Waist</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "最新腰圍", "Latest Waist")}</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(dashboard?.cards?.latestWaist || member.latestMetrics?.waist, {
                         emptyLabel: t(lang, "未填寫", "Not set"),
@@ -369,7 +431,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                     </p>
                   </div>
                   <div className="metric-band rounded-2xl p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Hip</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "最新臀圍", "Latest Hip")}</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(dashboard?.cards?.latestHip || member.latestMetrics?.hip, {
                         emptyLabel: t(lang, "未填寫", "Not set"),
@@ -378,7 +440,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                     </p>
                   </div>
                   <div className="metric-band rounded-2xl p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Chest</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "最新胸圍", "Latest Chest")}</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(dashboard?.cards?.latestChest || member.latestMetrics?.chest, {
                         emptyLabel: t(lang, "未填寫", "Not set"),
@@ -391,24 +453,24 @@ export default async function FamilyMemberDetailPage({ params }) {
 
               {dashboard?.trends ? (
                 <div className="soft-card rounded-[28px] p-6">
-                  <p className="section-kicker">7 Days vs 30 Days</p>
+                  <p className="section-kicker">{t(lang, "7 天對比 30 天", "7 Days vs 30 Days")}</p>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <div className="metric-band rounded-2xl p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Steps Change</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "步數變化", "Steps Change")}</p>
                       <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.steps, lang)}</p>
                     </div>
                     <div className="metric-band rounded-2xl p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Sleep Change</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "睡眠變化", "Sleep Change")}</p>
                       <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.sleep, lang)}</p>
                     </div>
                     <div className="metric-band rounded-2xl p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Resting HR Change</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "靜止心率變化", "Resting HR Change")}</p>
                       <p className="mt-1 font-semibold text-ink">
                         {formatDelta(dashboard.trends.restingHeartRate, lang)}
                       </p>
                     </div>
                     <div className="metric-band rounded-2xl p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Weight Change</p>
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "體重變化", "Weight Change")}</p>
                       <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.weight, lang)}</p>
                     </div>
                   </div>
