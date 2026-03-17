@@ -38,6 +38,7 @@ export default async function RootLayout({ children }) {
                 <Link href="/integrations">{t(lang, "整合功能", "Integrations")}</Link>
                 <Link href="/ai-doctor">{t(lang, "AI 醫生", "AI Doctor")}</Link>
                 <Link href="/reports">{t(lang, "每週報告", "Reports")}</Link>
+                <Link href="/milestones">{t(lang, "里程碑", "Milestones")}</Link>
               </nav>
             </div>
           </header>

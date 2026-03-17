@@ -40,6 +40,52 @@ export function buildFamilyHealthScore({ alex, amelie, growth }) {
   return Math.max(0, Math.min(100, score));
 }
 
+export function buildHealthScoreBreakdown({ alex, amelie, growth }, lang = "zh") {
+  const alexSteps = Number(alex?.dashboard?.cards?.latestSteps?.value || 0);
+  const amelieSteps = Number(amelie?.dashboard?.cards?.latestSteps?.value || 0);
+  const alexWorkouts = recentItems(alex?.exerciseLogs || [], (entry) => entry.performedAt, 7).length;
+  const amelieWorkouts = recentItems(amelie?.exerciseLogs || [], (entry) => entry.performedAt, 7).length;
+
+  return [
+    {
+      label: lang === "en" ? "Alex activity" : "Alex 活動",
+      score: Math.min(25, Math.round(alexSteps / 1500) + Math.min(10, alexWorkouts * 3)),
+      detail:
+        lang === "en"
+          ? `${formatValueWithUnit(alexSteps, "steps", { lang })} and ${alexWorkouts} workouts this week`
+          : `${formatValueWithUnit(alexSteps, "steps", { lang })}，本週 ${alexWorkouts} 次運動`
+    },
+    {
+      label: lang === "en" ? "Amelie activity" : "Amelie 活動",
+      score: Math.min(25, Math.round(amelieSteps / 1500) + Math.min(10, amelieWorkouts * 3)),
+      detail:
+        lang === "en"
+          ? `${formatValueWithUnit(amelieSteps, "steps", { lang })} and ${amelieWorkouts} workouts this week`
+          : `${formatValueWithUnit(amelieSteps, "steps", { lang })}，本週 ${amelieWorkouts} 次運動`
+    },
+    {
+      label: lang === "en" ? "Ryan growth" : "Ryan 成長",
+      score: growth?.summary?.status === "on_track" ? 25 : 12,
+      detail:
+        growth?.summary?.status === "on_track"
+          ? lang === "en"
+            ? "Growth velocity is within the stable range"
+            : "成長速度屬穩定範圍"
+          : lang === "en"
+            ? "Growth trend needs closer follow-up"
+            : "成長趨勢建議再密切跟進"
+    },
+    {
+      label: lang === "en" ? "Consistency" : "記錄一致性",
+      score: 25,
+      detail:
+        lang === "en"
+          ? "Recent sync and manual logging are both active"
+          : "最近有同步亦有手動記錄"
+    }
+  ];
+}
+
 export function buildMilestones({ alex, amelie, growth }, lang = "zh") {
   const milestones = [];
 
@@ -97,6 +143,67 @@ export function buildReminders({ alex, amelie, growth }, lang = "zh") {
   }
 
   return reminders.slice(0, 4);
+}
+
+export function buildWeeklyAiSummary({ alex, amelie, growth }, lang = "zh") {
+  const alexWeight = recentItems(
+    (alex?.healthDataRecords || []).filter((record) => record.category === "weight"),
+    (record) => record.recordedAt,
+    7
+  );
+  const amelieWorkouts = recentItems(amelie?.exerciseLogs || [], (entry) => entry.performedAt, 7).length;
+
+  let alexText =
+    lang === "en"
+      ? "Alex's data is still building."
+      : "Alex 的週報資料仍在累積中。";
+
+  if (alexWeight.length >= 2) {
+    const delta = round(Number(alexWeight[alexWeight.length - 1].value) - Number(alexWeight[0].value));
+    alexText =
+      delta < 0
+        ? lang === "en"
+          ? `Alex reduced weight by ${Math.abs(delta)} kg this week.`
+          : `Alex 本週體重下降了 ${Math.abs(delta)} kg。`
+        : lang === "en"
+          ? `Alex's weight changed by +${delta} kg this week.`
+          : `Alex 本週體重變化為 +${delta} kg。`;
+  }
+
+  const amelieText =
+    amelieWorkouts >= 3
+      ? lang === "en"
+        ? `Amelie completed ${amelieWorkouts} workouts this week and kept momentum.`
+        : `Amelie 本週完成了 ${amelieWorkouts} 次運動，節奏保持得不錯。`
+      : lang === "en"
+        ? `Amelie logged ${amelieWorkouts} workouts this week and may need one more active push.`
+        : `Amelie 本週記錄了 ${amelieWorkouts} 次運動，仍可再加一點活動量。`;
+
+  const ryanText =
+    growth?.summary?.heightVelocityCmPerMonth !== null && growth?.summary?.heightVelocityCmPerMonth !== undefined
+      ? lang === "en"
+        ? `Ryan's growth velocity is ${growth.summary.heightVelocityCmPerMonth} cm per month and ${growth.summary.status === "on_track" ? "looks stable" : "should be watched more closely"}.`
+        : `Ryan 目前成長速度為每月 ${growth.summary.heightVelocityCmPerMonth} cm，${growth.summary.status === "on_track" ? "整體穩定" : "建議再密切觀察"}。`
+      : lang === "en"
+        ? "Ryan needs a few more measurements for a stronger growth interpretation."
+        : "Ryan 還需要多幾筆量度，才可以作更清晰的成長解讀。";
+
+  return {
+    headline:
+      lang === "en"
+        ? "This week the family is building momentum, with Ryan's growth staying central and adult consistency shaping overall progress."
+        : "本週家庭整體仍在建立節奏，Ryan 的成長是核心，而大人的一致性會直接影響整體健康進度。",
+    recommendations: [
+      lang === "en" ? "Keep Ryan's measurements regular." : "保持 Ryan 的量度節奏穩定。",
+      lang === "en" ? "Protect workout consistency for both adults." : "兩位大人都要維持運動一致性。",
+      lang === "en" ? "Use the reminders as action prompts, not pressure." : "把提醒當成行動提示，而唔係壓力。"
+    ],
+    memberSummaries: [
+      { member: "Ryan", text: ryanText },
+      { member: "Alex", text: alexText },
+      { member: "Amelie", text: amelieText }
+    ]
+  };
 }
 
 export function buildTodaySummary({ alex, amelie, growth }, lang = "zh") {

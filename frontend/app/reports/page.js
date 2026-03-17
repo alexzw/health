@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { getFamilyMember, getGrowthTracking } from "../../lib/api";
 import { formatMetric, formatValueWithUnit } from "../../lib/format";
 import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../../lib/i18n";
+import { buildWeeklyAiSummary } from "../../lib/daily-engagement";
 import { buildMetricSeriesFromRecords } from "../../lib/time-range";
 
 export const metadata = {
@@ -46,6 +47,7 @@ export default async function ReportsPage() {
   const growthWeek = (growth?.measurements || []).filter(
     (item) => new Date(item.measuredAt).getTime() >= Date.now() - 7 * 24 * 60 * 60 * 1000
   );
+  const weeklyAiSummary = buildWeeklyAiSummary({ alex, amelie, growth }, lang);
 
   return (
     <section className="space-y-8">
@@ -61,6 +63,30 @@ export default async function ReportsPage() {
             "See Ryan's growth, Alex and Amelie's weight changes, this week's activity summary, and the most important health insights in one place."
           )}
         </p>
+      </div>
+
+      <div className="soft-card rounded-[30px] p-6 sm:p-7">
+        <p className="section-kicker">{t(lang, "AI Summary", "AI Summary")}</p>
+        <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
+          {t(lang, "可分享的每週解讀", "Shareable Weekly Narrative")}
+        </h2>
+        <p className="mt-4 text-base leading-7 text-slate-700">{weeklyAiSummary.headline}</p>
+        <div className="mt-5 grid gap-4 xl:grid-cols-3">
+          {weeklyAiSummary.memberSummaries.map((item) => (
+            <div key={item.member} className="rounded-[22px] bg-slate-50 px-4 py-4">
+              <p className="text-sm font-semibold text-ink">{item.member}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{item.text}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-5 rounded-[22px] border border-white/80 bg-white/70 px-5 py-5">
+          <p className="text-sm font-semibold text-ink">{t(lang, "本週建議", "Recommended Focus")}</p>
+          <div className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
+            {weeklyAiSummary.recommendations.map((item) => (
+              <p key={item}>• {item}</p>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">

@@ -3,12 +3,14 @@ import { cookies } from "next/headers";
 import { GrowthChart } from "../components/growth-chart";
 import { MetricHistoryChart } from "../components/metric-history-chart";
 import { MiniMetricChart } from "../components/mini-metric-chart";
+import { ReminderPanel } from "../components/reminder-panel";
 import { TimeRangeCaption, TimeRangeFilter } from "../components/time-range-filter";
 import { formatMetric, formatRelativeDate, formatValueWithUnit } from "../lib/format";
 import { getFamilyMember, getFamilyMembers, getGrowthTracking } from "../lib/api";
 import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../lib/i18n";
 import {
   buildFamilyHealthScore,
+  buildHealthScoreBreakdown,
   buildMilestones,
   buildProactiveInsights,
   buildReminders,
@@ -121,6 +123,7 @@ export default async function HomePage({ searchParams }) {
   const reminders = buildReminders(engagementContext, lang);
   const milestones = buildMilestones(engagementContext, lang);
   const familyHealthScore = buildFamilyHealthScore(engagementContext);
+  const healthScoreBreakdown = buildHealthScoreBreakdown(engagementContext, lang);
 
   const profileCards = [
     {
@@ -217,6 +220,17 @@ export default async function HomePage({ searchParams }) {
             </p>
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
               <div className="h-full rounded-full bg-blue" style={{ width: `${familyHealthScore}%` }} />
+            </div>
+            <div className="mt-5 grid gap-3">
+              {healthScoreBreakdown.map((item) => (
+                <div key={item.label} className="rounded-[20px] bg-slate-50 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-ink">{item.label}</p>
+                    <p className="text-sm font-semibold text-blue">{item.score}/25</p>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">{item.detail}</p>
+                </div>
+              ))}
             </div>
           </div>
           <div className="soft-card rounded-[30px] p-6">
@@ -446,19 +460,8 @@ export default async function HomePage({ searchParams }) {
           <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-ink">
             {t(lang, "避免健康習慣中斷", "Keep the habit alive")}
           </h2>
-          <div className="mt-5 space-y-4">
-            {reminders.length ? (
-              reminders.map((reminder) => (
-                <div key={reminder.title} className="rounded-[24px] border border-amber-200 bg-amber-50/80 p-5">
-                  <p className="text-base font-semibold text-amber-950">{reminder.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-amber-900/80">{reminder.detail}</p>
-                </div>
-              ))
-            ) : (
-              <div className="rounded-[24px] border border-emerald-200 bg-emerald-50/80 p-5 text-sm text-emerald-900">
-                {t(lang, "目前沒有需要特別追趕的提醒，節奏維持得不錯。", "There are no overdue reminders right now. Your family is keeping a healthy rhythm.")}
-              </div>
-            )}
+          <div className="mt-5">
+            <ReminderPanel reminders={reminders} lang={lang} />
           </div>
         </div>
       </div>
