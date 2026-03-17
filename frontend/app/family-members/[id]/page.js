@@ -7,6 +7,7 @@ import { GrowthInsights } from "../../../components/growth-insights";
 import { HealthRecordTable } from "../../../components/health-record-table";
 import { MetricHistoryChart } from "../../../components/metric-history-chart";
 import { MiniMetricChart } from "../../../components/mini-metric-chart";
+import { RecentGrowthRecords } from "../../../components/recent-growth-records";
 import { CoachActionsPanel } from "../../../components/coach-actions-panel";
 import { ProfileManagementPanel } from "../../../components/profile-management-panel";
 import { SmartHealthCoach } from "../../../components/smart-health-coach";
@@ -177,26 +178,37 @@ export default async function FamilyMemberDetailPage({ params }) {
             <h2 className="mt-2 text-4xl font-semibold tracking-[-0.05em] text-ink">
               {t(lang, "成長摘要與圖表", "Growth Summary and Charts")}
             </h2>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link href="#manage-growth" className="button-primary px-4 py-2.5 text-sm font-semibold">
+                {t(lang, "編輯身高體重", "Edit Height & Weight")}
+              </Link>
+              <Link href="#manage-growth" className="button-secondary px-4 py-2.5 text-sm font-semibold">
+                {t(lang, "新增成長記錄", "Add Growth Record")}
+              </Link>
+            </div>
           </div>
           <GrowthInsights growth={growth} lang={lang} />
           {hasGrowthMeasurements ? (
-            <div className="grid gap-5 lg:grid-cols-2">
-              <GrowthChart
-                measurements={growth.measurements}
-                metric="heightCm"
-                color="#0071e3"
-                label={t(lang, "身高趨勢", "Height Trend")}
-                unit="cm"
-                lang={lang}
-              />
-              <GrowthChart
-                measurements={growth.measurements}
-                metric="weightKg"
-                color="#34a853"
-                label={t(lang, "體重趨勢", "Weight Trend")}
-                unit="kg"
-                lang={lang}
-              />
+            <div className="space-y-5">
+              <div className="grid gap-5 lg:grid-cols-2">
+                <GrowthChart
+                  measurements={growth.measurements}
+                  metric="heightCm"
+                  color="#0071e3"
+                  label={t(lang, "身高趨勢", "Height Trend")}
+                  unit="cm"
+                  lang={lang}
+                />
+                <GrowthChart
+                  measurements={growth.measurements}
+                  metric="weightKg"
+                  color="#34a853"
+                  label={t(lang, "體重趨勢", "Weight Trend")}
+                  unit="kg"
+                  lang={lang}
+                />
+              </div>
+              <RecentGrowthRecords memberId={member.id} measurements={growth.measurements} lang={lang} />
             </div>
           ) : (
             <div className="soft-card rounded-[28px] p-6">
@@ -211,7 +223,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                   "Add height or weight measurements to unlock Ryan's growth charts here."
                 )}
               </p>
-              <Link href="#manage" className="button-secondary mt-4 px-4 py-2 text-sm font-semibold">
+              <Link href="#manage-growth" className="button-secondary mt-4 px-4 py-2 text-sm font-semibold">
                 {t(lang, "新增成長記錄", "Add Growth Record")}
               </Link>
             </div>
@@ -504,7 +516,7 @@ export default async function FamilyMemberDetailPage({ params }) {
         </div>
       ) : null}
 
-      <div id="manage">
+      <div id={member.familyRole === "Child" ? "manage-growth" : "manage"}>
         <ProfileManagementPanel member={member} growth={growth} lang={lang} />
       </div>
     </section>

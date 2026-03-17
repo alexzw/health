@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUNTIME_DIR="$ROOT_DIR/.runtime"
 BACKEND_LOG="$RUNTIME_DIR/backend.log"
-TUNNEL_LOG="$RUNTIME_DIR/localtunnel.log"
+TUNNEL_LOG="$RUNTIME_DIR/cloudflared.log"
 
 mkdir -p "$RUNTIME_DIR"
 
@@ -41,18 +41,15 @@ if ! curl -s http://127.0.0.1:4000/health >/dev/null 2>&1; then
 fi
 
 LT_ARGS=(--port 4000)
-if [[ -n "${LOCALTUNNEL_SUBDOMAIN:-}" ]]; then
-  LT_ARGS+=(--subdomain "$LOCALTUNNEL_SUBDOMAIN")
-fi
 
 rm -f "$TUNNEL_LOG"
-npx localtunnel "${LT_ARGS[@]}" >"$TUNNEL_LOG" 2>&1 &
+npx cloudflared tunnel --url http://127.0.0.1:4000 --no-autoupdate >"$TUNNEL_LOG" 2>&1 &
 LT_PID=$!
 
 PUBLIC_URL=""
 for _ in {1..30}; do
   if [[ -f "$TUNNEL_LOG" ]]; then
-    PUBLIC_URL="$(perl -ne 'print "$1\n" if /your url is:\s*(https:\/\/\S+)/' "$TUNNEL_LOG" | tail -n1)"
+    PUBLIC_URL="$(perl -ne 'print "$1\n" if /(https:\/\/[a-z0-9.-]+\.trycloudflare\.com)/i' "$TUNNEL_LOG" | tail -n1)"
   fi
 
   if [[ -n "$PUBLIC_URL" ]]; then
@@ -62,7 +59,7 @@ for _ in {1..30}; do
 done
 
 if [[ -z "$PUBLIC_URL" ]]; then
-  echo "Localtunnel did not return a public URL."
+  echo "Cloudflare quick tunnel did not return a public URL."
   exit 1
 fi
 
@@ -78,6 +75,9 @@ echo "bash scripts/sync-vercel-api-url.sh $API_BASE_URL"
 echo
 echo "To redeploy the frontend with the synced env, run:"
 echo "bash scripts/deploy-mobile-frontend.sh $API_BASE_URL"
+echo
+echo "For automatic recovery when the tunnel changes, run:"
+echo "bash scripts/watch-mobile-backend.sh"
 echo
 echo "Logs:"
 echo "- Backend: $BACKEND_LOG"

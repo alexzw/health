@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   createExerciseLog,
@@ -376,7 +376,8 @@ function EditableList({
   onDelete,
   isSaving,
   emptyText,
-  deleteLabel
+  deleteLabel,
+  itemIdPrefix
 }) {
   const [drafts, setDrafts] = useState(() =>
     Object.fromEntries(items.map((item) => [getKey(item), initialValues(item)]))
@@ -403,6 +404,7 @@ function EditableList({
           return (
             <form
               key={id}
+              id={itemIdPrefix ? `${itemIdPrefix}-${id}` : undefined}
               className="rounded-[24px] border border-white/70 bg-white/70 p-4"
               onSubmit={(event) => {
                 event.preventDefault();
@@ -685,14 +687,18 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
   const tabs = [
     { id: "profile", label: t(lang, "個人資料", "Profile") },
     { id: "record", label: t(lang, "健康紀錄", "Health Records") },
-    { id: isAdult ? "exercise" : "growth", label: isAdult ? t(lang, "運動紀錄", "Workouts") : t(lang, "成長數據", "Growth") }
+    {
+      id: isAdult ? "exercise" : "growth",
+      label: isAdult ? t(lang, "運動紀錄", "Workouts") : t(lang, "身高與體重", "Height & Weight")
+    }
   ];
 
   if (isAdult) {
     tabs.push({ id: "apple-health", label: t(lang, "Apple Health 匯入", "Apple Health Import") });
   }
 
-  const [activeTab, setActiveTab] = useState("profile");
+  const defaultTab = isAdult ? "profile" : "growth";
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -746,6 +752,20 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
     notes: "",
     performedAt: toDateTimeLocalValue(new Date().toISOString())
   });
+
+  useEffect(() => {
+    const hash = window.location.hash.replace(/^#/, "");
+
+    if (!hash) {
+      setActiveTab(defaultTab);
+      return;
+    }
+
+    const targetTab = tabs.find((tab) => hash.includes(tab.id))?.id;
+    if (targetTab) {
+      setActiveTab(targetTab);
+    }
+  }, [defaultTab, tabs]);
 
   async function runAction(action, successMessage) {
     setIsSaving(true);
@@ -1475,6 +1495,7 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
           isSaving={isSaving}
           emptyText="暫時沒有成長數據。"
           deleteLabel="成長數據"
+          itemIdPrefix="growth-record"
         />
       </div>
     );
