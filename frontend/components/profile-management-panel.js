@@ -768,18 +768,22 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
     .sort((left, right) => new Date(right.recordedAt).getTime() - new Date(left.recordedAt).getTime())[0];
   const manualHealthRecords = (member.healthDataRecords || []).filter(isManualRecord);
   const manualExerciseLogs = (member.exerciseLogs || []).filter(isManualExerciseLog);
-  const tabs = [
-    { id: "profile", label: t(lang, "個人資料", "Profile") },
-    { id: "record", label: t(lang, "健康紀錄", "Health Records") },
-    {
-      id: isAdult ? "exercise" : "growth",
-      label: isAdult ? t(lang, "運動紀錄", "Workouts") : t(lang, "身高與體重", "Height & Weight")
-    }
-  ];
+  const tabs = useMemo(() => {
+    const nextTabs = [
+      { id: "profile", label: t(lang, "個人資料", "Profile") },
+      { id: "record", label: t(lang, "健康紀錄", "Health Records") },
+      {
+        id: isAdult ? "exercise" : "growth",
+        label: isAdult ? t(lang, "運動紀錄", "Workouts") : t(lang, "身高與體重", "Height & Weight")
+      }
+    ];
 
-  if (isAdult) {
-    tabs.push({ id: "apple-health", label: t(lang, "Apple Health 匯入", "Apple Health Import") });
-  }
+    if (isAdult) {
+      nextTabs.push({ id: "apple-health", label: t(lang, "Apple Health 匯入", "Apple Health Import") });
+    }
+
+    return nextTabs;
+  }, [isAdult, lang]);
 
   const defaultTab = isAdult ? "profile" : "growth";
   const [activeTab, setActiveTab] = useState(defaultTab);
