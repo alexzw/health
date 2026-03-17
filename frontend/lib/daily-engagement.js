@@ -24,6 +24,19 @@ function latestByCategory(records, category) {
     .sort((left, right) => new Date(right.recordedAt).getTime() - new Date(left.recordedAt).getTime())[0];
 }
 
+function sortByDate(items = [], getDate) {
+  return [...items].sort((left, right) => new Date(getDate(left)).getTime() - new Date(getDate(right)).getTime());
+}
+
+function buildDelta(items = [], getValue, getDate, days) {
+  const filtered = sortByDate(recentItems(items, getDate, days), getDate);
+  if (filtered.length < 2) {
+    return null;
+  }
+
+  return round(Number(getValue(filtered[filtered.length - 1])) - Number(getValue(filtered[0])));
+}
+
 function startOfDay(dateValue) {
   const date = new Date(dateValue);
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -673,4 +686,178 @@ export function buildProactiveInsights({ alex, amelie, growth }, lang = "zh") {
   });
 
   return insights.slice(0, 4);
+}
+
+function buildAdultContextInsight(member, lang = "zh") {
+  if (!member) {
+    return null;
+  }
+
+  const name = member.name;
+  const weightRecords = (member.healthDataRecords || []).filter((record) => record.category === "weight");
+  const sleepRecords = (member.healthDataRecords || []).filter((record) => record.category === "sleep");
+  const restingHrRecords = (member.healthDataRecords || []).filter((record) => record.category === "resting_heart_rate");
+  const workouts7d = recentItems(member.exerciseLogs || [], (entry) => entry.performedAt, 7).length;
+  const workouts14d = recentItems(member.exerciseLogs || [], (entry) => entry.performedAt, 14).length;
+  const weightDelta7d = buildDelta(weightRecords, (record) => record.value, (record) => record.recordedAt, 7);
+  const sleepAvg7d = average(recentItems(sleepRecords, (record) => record.recordedAt, 7), (record) => record.value);
+  const sleepAvg30d = average(recentItems(sleepRecords, (record) => record.recordedAt, 30), (record) => record.value);
+  const hrAvg7d = average(recentItems(restingHrRecords, (record) => record.recordedAt, 7), (record) => record.value);
+  const hrAvg30d = average(recentItems(restingHrRecords, (record) => record.recordedAt, 30), (record) => record.value);
+
+  if (weightDelta7d !== null && weightDelta7d < -0.6 && workouts7d >= 2) {
+    return {
+      severity: "positive",
+      title: lang === "en" ? `${name} momentum is lining up` : `${name} 的節奏正在對上`,
+      summary:
+        lang === "en"
+          ? `Weight is down ${Math.abs(weightDelta7d)} kg this week and activity has increased with ${workouts7d} workouts.`
+          : `本週體重下降 ${Math.abs(weightDelta7d)} kg，而且已完成 ${workouts7d} 次運動，變化和活動量大致一致。`,
+      detail:
+        lang === "en"
+          ? "The current trend matches increased activity, so the change looks purposeful rather than random."
+          : "目前體重變化和活動增加方向一致，較像是有節奏的進展，而不是偶然波動。"
+    };
+  }
+
+  if (sleepAvg7d > 0 && sleepAvg30d > 0 && hrAvg7d > 0 && hrAvg30d > 0 && sleepAvg7d < sleepAvg30d - 0.6 && hrAvg7d > hrAvg30d + 3) {
+    return {
+      severity: "attention",
+      title: lang === "en" ? `${name} may need better recovery` : `${name} 這週可能恢復不足`,
+      summary:
+        lang === "en"
+          ? `Sleep is lower than usual while resting heart rate is up this week.`
+          : "這週睡眠比平時少，而靜止心率亦有上升。",
+      detail:
+        lang === "en"
+          ? "That combination often means recovery is weaker than usual. A lighter rhythm and earlier sleep may help."
+          : "這種組合通常代表恢復狀態比平時弱，稍為放輕節奏和早一點休息會更好。"
+    };
+  }
+
+  if (workouts14d === 0) {
+    return {
+      severity: "info",
+      title: lang === "en" ? `${name} needs a restart point` : `${name} 可以重新啟動節奏`,
+      summary:
+        lang === "en"
+          ? `No workouts have been logged in the last two weeks.`
+          : "最近兩週未有運動記錄。",
+      detail:
+        lang === "en"
+          ? "One short, easy session is enough to restart consistency."
+          : "先補一節短而容易完成的運動，已經足以重新建立節奏。"
+    };
+  }
+
+  return {
+    severity: "info",
+    title: lang === "en" ? `${name} is staying fairly steady` : `${name} 整體仍算平穩`,
+    summary:
+      lang === "en"
+        ? "Recent weight, activity, and recovery signals are not showing a major shift."
+        : "最近的體重、活動和恢復訊號未見到明顯偏移。",
+    detail:
+      lang === "en"
+        ? "This is a good time to keep the rhythm simple and consistent."
+        : "現階段最值得做的是把節奏保持簡單而穩定。"
+  };
+}
+
+function buildRyanContextInsight(growth, lang = "zh") {
+  if (!growth) {
+    return null;
+  }
+
+  const measurements = sortByDate(growth.measurements || [], (entry) => entry.measuredAt);
+  const latest = growth?.summary?.latestMeasurement;
+  const velocity = growth?.summary?.heightVelocityCmPerMonth;
+  const totalGain = growth?.summary?.totalHeightGainCm;
+
+  if (measurements.length >= 3 && velocity !== null && velocity !== undefined) {
+    const recentWindow = measurements.slice(-3);
+    const previousWindow = measurements.slice(-6, -3);
+    const recentGain = recentWindow.length >= 2 ? round(Number(recentWindow[recentWindow.length - 1].heightCm) - Number(recentWindow[0].heightCm)) : null;
+    const previousGain = previousWindow.length >= 2 ? round(Number(previousWindow[previousWindow.length - 1].heightCm) - Number(previousWindow[0].heightCm)) : null;
+
+    if (recentGain !== null && previousGain !== null) {
+      const slower = recentGain < previousGain - 0.6;
+      const faster = recentGain > previousGain + 0.6;
+      if (slower || faster) {
+        return {
+          severity: slower ? "attention" : "positive",
+          title: lang === "en" ? "Ryan's recent pace has shifted" : "Ryan 最近成長速度有變化",
+          summary:
+            lang === "en"
+              ? slower
+                ? "Recent growth is a little slower than earlier records."
+                : "Recent growth is a little faster than earlier records."
+              : slower
+                ? "最近幾次量度的成長速度比之前稍慢。"
+                : "最近幾次量度的成長速度比之前稍快。",
+          detail:
+            lang === "en"
+              ? `Current height velocity is ${velocity} cm per month. Keep tracking so the next few checks can confirm the pattern.`
+              : `目前身高速度約為每月 ${velocity} cm，繼續穩定量度，先可以確認這個變化是否持續。`
+        };
+      }
+    }
+  }
+
+  if (velocity !== null && velocity !== undefined) {
+    return {
+      severity: growth?.summary?.status === "on_track" ? "positive" : "info",
+      title: lang === "en" ? "Ryan's growth trend remains steady" : "Ryan 的成長趨勢保持穩定",
+      summary:
+        lang === "en"
+          ? `Height is increasing at about ${velocity} cm per month.`
+          : `身高目前大約以每月 ${velocity} cm 的速度增加。`,
+      detail:
+        latest && totalGain !== null && totalGain !== undefined
+          ? lang === "en"
+            ? `Since the first record, Ryan has grown ${totalGain} cm and the latest check remains within the expected tracking range.`
+            : `由第一筆記錄到而家，Ryan 已長高 ${totalGain} cm，而最近一次量度仍然屬於穩定追蹤範圍。`
+          : t(lang, "繼續固定量度，就可以得到更清楚的成長解讀。", "Keep measuring regularly for a clearer growth interpretation.")
+    };
+  }
+
+  return {
+    severity: "info",
+    title: lang === "en" ? "Ryan needs a few more measurements" : "Ryan 仍需要多幾次量度",
+    summary:
+      lang === "en"
+        ? "There is not enough growth history yet for a strong interpretation."
+        : "目前成長歷史仍未足夠作更清楚的解讀。",
+    detail:
+      lang === "en"
+        ? "A few more height and weight checks will make trend detection much more useful."
+        : "再補幾次身高和體重量度，之後的趨勢分析會清楚很多。"
+  };
+}
+
+export function buildContextAwareInsights({ alex, amelie, growth }, lang = "zh") {
+  const insights = [];
+  const alexInsight = buildAdultContextInsight(alex, lang);
+  const amelieInsight = buildAdultContextInsight(amelie, lang);
+  const ryanInsight = buildRyanContextInsight(growth, lang);
+
+  if (ryanInsight) {
+    insights.push({ member: "Ryan", ...ryanInsight });
+  }
+  if (alexInsight) {
+    insights.push({ member: "Alex", ...alexInsight });
+  }
+  if (amelieInsight) {
+    insights.push({ member: "Amelie", ...amelieInsight });
+  }
+
+  return insights;
+}
+
+export function buildMemberContextInsight(member, growth, lang = "zh") {
+  if (member?.id === "ryan") {
+    return buildRyanContextInsight(growth, lang);
+  }
+
+  return buildAdultContextInsight(member, lang);
 }

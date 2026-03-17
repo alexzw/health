@@ -13,6 +13,7 @@ import {
   buildFamilyHealthScore,
   buildHealthScoreBreakdown,
   buildConsistencySignals,
+  buildContextAwareInsights,
   buildMemberHealthScores,
   buildMilestones,
   buildProactiveInsights,
@@ -123,6 +124,7 @@ export default async function HomePage({ searchParams }) {
   const engagementContext = { alex, amelie, growth };
   const todaySummary = buildTodaySummary(engagementContext, lang);
   const proactiveInsights = buildProactiveInsights(engagementContext, lang);
+  const contextAwareInsights = buildContextAwareInsights(engagementContext, lang);
   const reminders = buildReminders(engagementContext, lang);
   const milestones = buildMilestones(engagementContext, lang);
   const familyHealthScore = buildFamilyHealthScore(engagementContext);
@@ -203,7 +205,7 @@ export default async function HomePage({ searchParams }) {
             </div>
             <div className="metric-band rounded-[24px] p-5">
               <p className="eyebrow-label">{t(lang, "今日重點", "Key Insight")}</p>
-              <p className="mt-2 text-xl font-semibold text-ink">{proactiveInsights[0]?.title || t(lang, "仍在累積資料", "Still collecting data")}</p>
+              <p className="mt-2 text-xl font-semibold text-ink">{contextAwareInsights[0]?.title || proactiveInsights[0]?.title || t(lang, "仍在累積資料", "Still collecting data")}</p>
               <p className="mt-2 text-sm text-slate-500">{proactiveInsights[0]?.detail || t(lang, "新增更多記錄後，系統會開始主動提醒。", "Add more data and the system will start surfacing proactive guidance.")}</p>
             </div>
           </div>
@@ -445,6 +447,56 @@ export default async function HomePage({ searchParams }) {
                   <p className="mt-2 text-sm text-slate-500">{t(lang, "開啟完整檔案", "Open full profile")}</p>
                 </Link>
               ))}
+            </div>
+          </div>
+
+          <div className="soft-card rounded-[34px] p-6 sm:p-7">
+            <p className="section-kicker">{t(lang, "智能解讀", "Context-Aware Insights")}</p>
+            <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-ink">
+              {t(lang, "綜合訊號解讀", "What the patterns mean")}
+            </h2>
+            <div className="mt-5 grid gap-4">
+              {contextAwareInsights.length ? (
+                contextAwareInsights.map((insight) => (
+                  <div
+                    key={`${insight.member}-${insight.title}`}
+                    className={`rounded-[24px] p-5 ${
+                      insight.severity === "attention"
+                        ? "border border-amber-200 bg-amber-50"
+                        : insight.severity === "positive"
+                          ? "border border-emerald-200 bg-emerald-50"
+                          : "metric-band"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-base font-semibold text-ink">{insight.title}</p>
+                      <span className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+                        {insight.member}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-slate-700">{insight.summary}</p>
+                    <details className="mt-3 text-sm text-slate-500">
+                      <summary className="cursor-pointer font-medium text-slate-600">
+                        {t(lang, "展開說明", "Show explanation")}
+                      </summary>
+                      <p className="mt-2 leading-6">{insight.detail}</p>
+                    </details>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-[24px] border border-dashed border-slate-200 bg-slate-50/80 p-5">
+                  <p className="text-sm font-semibold text-slate-700">
+                    {t(lang, "仍未有足夠綜合資料", "Not enough combined data yet")}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    {t(
+                      lang,
+                      "當體重、活動、睡眠或成長資料再多一點，系統就會開始解讀它們之間的關係。",
+                      "Once there is a bit more weight, activity, sleep, or growth data, the app will start explaining how those signals connect."
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 

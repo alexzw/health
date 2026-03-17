@@ -17,7 +17,12 @@ import { formatChineseDate, formatMetric, formatRelativeDate, formatValueWithUni
 import { getCoachInsights, getFamilyMember, getGrowthTracking, getWeeklyGoals } from "../../../lib/api";
 import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../../../lib/i18n";
 import { enrichGoalsWithProgress } from "../../../lib/goal-progress";
-import { buildMemberConsistency, buildMemberHealthScores, buildMemberScoreBreakdown } from "../../../lib/daily-engagement";
+import {
+  buildMemberConsistency,
+  buildMemberContextInsight,
+  buildMemberHealthScores,
+  buildMemberScoreBreakdown
+} from "../../../lib/daily-engagement";
 import {
   buildMetricSeriesFromRecords,
   filterItemsByRange,
@@ -159,6 +164,7 @@ export default async function FamilyMemberDetailPage({ params, searchParams }) {
   ).find((item) => item.id === member.id);
   const memberScoreBreakdown = buildMemberScoreBreakdown({ member, growth, lang });
   const memberConsistency = buildMemberConsistency(member, growth, lang);
+  const memberContextInsight = buildMemberContextInsight(member, growth, lang);
 
   return (
     <section className="space-y-8">
@@ -248,6 +254,27 @@ export default async function FamilyMemberDetailPage({ params, searchParams }) {
                 <p className="mt-2 text-3xl font-semibold text-ink">{memberConsistency.streak}</p>
               </div>
             </div>
+          </div>
+        ) : null}
+        {memberContextInsight ? (
+          <div className="mt-4 rounded-[26px] border border-white/70 bg-white/75 p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="section-kicker">{t(lang, "智能解讀", "Context-Aware Insight")}</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">
+                  {memberContextInsight.title}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{memberContextInsight.summary}</p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                {memberContextInsight.severity === "positive"
+                  ? t(lang, "穩定中", "Looking good")
+                  : memberContextInsight.severity === "attention"
+                    ? t(lang, "值得留意", "Worth checking")
+                    : t(lang, "持續追蹤", "Keep tracking")}
+              </span>
+            </div>
+            <p className="mt-4 text-sm leading-6 text-slate-500">{memberContextInsight.detail}</p>
           </div>
         ) : null}
         <div className="mt-6 flex flex-wrap items-center gap-3">

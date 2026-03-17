@@ -72,13 +72,6 @@ export function MemberCard({ member, lang = "zh" }) {
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
-                {member.familyRole === "Father"
-                  ? t(lang, "爸爸", "Father")
-                  : member.familyRole === "Mother"
-                    ? t(lang, "媽媽", "Mother")
-                    : t(lang, "孩子", "Child")}
-              </p>
               <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
                 {member.familyRole === "Father"
                   ? t(lang, "父親", "Father")
