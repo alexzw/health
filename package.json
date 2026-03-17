@@ -10,7 +10,9 @@
     "dev:backend": "npm --workspace backend run dev",
     "start:frontend": "npm --workspace frontend run start",
     "start:backend": "npm --workspace backend run start",
-    "check:backend": "npm --workspace backend run check"
+    "check:backend": "npm --workspace backend run check",
+    "mobile:start": "bash scripts/start-mobile-backend.sh",
+    "vercel:sync-api": "bash scripts/sync-vercel-api-url.sh",
+    "mobile:deploy": "bash scripts/deploy-mobile-frontend.sh"
   }
 }
-
