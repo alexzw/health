@@ -20,6 +20,7 @@ export default async function MilestonesPage() {
   ]);
 
   const milestones = buildMilestones({ alex, amelie, growth }, lang);
+  const featuredMilestone = milestones[0] || null;
 
   return (
     <section className="space-y-8">
@@ -36,6 +37,25 @@ export default async function MilestonesPage() {
           )}
         </p>
       </div>
+
+      {featuredMilestone ? (
+        <div className="soft-card rounded-[34px] p-7">
+          <p className="section-kicker">{t(lang, "本週值得慶祝", "Worth Celebrating This Week")}</p>
+          <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-3xl font-semibold tracking-[-0.04em] text-ink">{featuredMilestone.title}</h2>
+              <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
+                {featuredMilestone.celebration || featuredMilestone.detail}
+              </p>
+            </div>
+            <div className="rounded-[26px] bg-emerald-50 px-5 py-5 text-emerald-900">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700/80">{featuredMilestone.member}</p>
+              <p className="mt-2 text-lg font-semibold">{featuredMilestone.typeLabel}</p>
+              <p className="mt-2 text-sm text-emerald-800/80">{featuredMilestone.detail}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <MilestoneTimeline milestones={milestones} lang={lang} />
 

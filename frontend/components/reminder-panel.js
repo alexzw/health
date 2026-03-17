@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { formatRelativeDate } from "../lib/format";
 import { t } from "../lib/i18n";
 
 const STORAGE_KEY = "family-health-reminder-state";
@@ -171,6 +172,9 @@ export function ReminderPanel({ reminders, lang = "zh" }) {
                     {reminder.state.done
                       ? t(lang, "已標記完成", "Marked as done")
                       : t(lang, "已延後一天", "Snoozed for 1 day")}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {formatRelativeDate(reminder.state.updatedAt, lang)}
                   </p>
                 </div>
                 <button

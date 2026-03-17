@@ -17,7 +17,7 @@ import { formatChineseDate, formatMetric, formatRelativeDate, formatValueWithUni
 import { getCoachInsights, getFamilyMember, getGrowthTracking, getWeeklyGoals } from "../../../lib/api";
 import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../../../lib/i18n";
 import { enrichGoalsWithProgress } from "../../../lib/goal-progress";
-import { buildMemberHealthScores } from "../../../lib/daily-engagement";
+import { buildMemberHealthScores, buildMemberScoreBreakdown } from "../../../lib/daily-engagement";
 import {
   buildMetricSeriesFromRecords,
   filterItemsByRange,
@@ -157,6 +157,7 @@ export default async function FamilyMemberDetailPage({ params, searchParams }) {
     },
     lang
   ).find((item) => item.id === member.id);
+  const memberScoreBreakdown = buildMemberScoreBreakdown({ member, growth, lang });
 
   return (
     <section className="space-y-8">
@@ -213,6 +214,22 @@ export default async function FamilyMemberDetailPage({ params, searchParams }) {
                 <p className="mt-3 text-sm text-slate-500">{currentMemberScore.detail}</p>
               </div>
             </div>
+            {memberScoreBreakdown.length ? (
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                {memberScoreBreakdown.map((item) => (
+                  <div key={item.label} className="rounded-[20px] bg-slate-50 px-4 py-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-ink">{item.label}</p>
+                      <p className="text-sm font-semibold text-blue">{item.score}</p>
+                    </div>
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+                      <div className="h-full rounded-full bg-blue" style={{ width: `${Math.min(100, item.score)}%` }} />
+                    </div>
+                    <p className="mt-3 text-xs leading-5 text-slate-500">{item.detail}</p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
         <div className="mt-6 flex flex-wrap items-center gap-3">

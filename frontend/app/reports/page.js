@@ -70,6 +70,15 @@ export default async function ReportsPage() {
       </div>
 
       <div className="soft-card report-card rounded-[30px] p-6 sm:p-7">
+        <div className="rounded-[26px] bg-slate-950 px-6 py-6 text-white">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
+            {weeklyAiSummary.coverTitle}
+          </p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em]">
+            {t(lang, "這一頁就是你今週最重要的健康重點。", "This page captures the most important health signals from this week.")}
+          </h2>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-white/70">{weeklyAiSummary.coverSubtitle}</p>
+        </div>
         <p className="section-kicker">{t(lang, "AI Summary", "AI Summary")}</p>
         <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
           {t(lang, "可分享的每週解讀", "Shareable Weekly Narrative")}

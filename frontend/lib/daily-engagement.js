@@ -93,6 +93,80 @@ function buildMemberScore(value, workoutCount, maxStepScore, maxWorkoutScore) {
   return Math.max(0, Math.min(100, 45 + stepScore * 2 + workoutScore * 2));
 }
 
+export function buildMemberScoreBreakdown({ member, growth, lang = "zh" }) {
+  if (!member && !growth) {
+    return [];
+  }
+
+  if (member?.id === "alex" || member?.id === "amelie") {
+    const steps = Number(member?.dashboard?.cards?.latestSteps?.value || 0);
+    const workouts = recentItems(member?.exerciseLogs || [], (entry) => entry.performedAt, 7).length;
+    const weightTrend = Number(member?.dashboard?.trends?.weight?.delta || 0);
+
+    return [
+      {
+        label: lang === "en" ? "Activity" : "活動",
+        score: Math.min(35, Math.round(steps / 1600) * 4),
+        detail:
+          lang === "en"
+            ? `${formatValueWithUnit(steps, "steps", { lang })} in the latest sync`
+            : `最近同步 ${formatValueWithUnit(steps, "steps", { lang })}`
+      },
+      {
+        label: lang === "en" ? "Workout rhythm" : "運動節奏",
+        score: Math.min(35, workouts * 10),
+        detail:
+          lang === "en"
+            ? `${workouts} workouts logged this week`
+            : `本週記錄了 ${workouts} 次運動`
+      },
+      {
+        label: lang === "en" ? "Trend quality" : "趨勢品質",
+        score: weightTrend <= 0 ? 30 : 18,
+        detail:
+          lang === "en"
+            ? weightTrend <= 0
+              ? "Weight trend is stable or moving in the right direction"
+              : "Weight trend needs a steadier pace"
+            : weightTrend <= 0
+              ? "體重趨勢穩定，或者正向目標前進"
+              : "體重趨勢仍可再收得更穩定"
+      }
+    ];
+  }
+
+  const latestGrowth = growth?.summary?.latestMeasurement;
+  return [
+    {
+      label: lang === "en" ? "Growth velocity" : "成長速度",
+      score: growth?.summary?.status === "on_track" ? 36 : 20,
+      detail:
+        growth?.summary?.heightVelocityCmPerMonth !== null && growth?.summary?.heightVelocityCmPerMonth !== undefined
+          ? lang === "en"
+            ? `${growth.summary.heightVelocityCmPerMonth} cm per month`
+            : `每月 ${growth.summary.heightVelocityCmPerMonth} cm`
+          : t(lang, "仍需更多資料", "More data is needed")
+    },
+    {
+      label: lang === "en" ? "Measurement freshness" : "量度新鮮度",
+      score: recentItems(growth?.measurements || [], (entry) => entry.measuredAt, 30).length ? 32 : 16,
+      detail:
+        recentItems(growth?.measurements || [], (entry) => entry.measuredAt, 30).length
+          ? t(lang, "最近 30 天內有新量度", "New measurements in the last 30 days")
+          : t(lang, "最近 30 天未有新量度", "No measurements in the last 30 days")
+    },
+    {
+      label: lang === "en" ? "Current check" : "目前狀態",
+      score: latestGrowth ? 32 : 18,
+      detail: latestGrowth
+        ? lang === "en"
+          ? `${latestGrowth.heightCm} cm and ${latestGrowth.weightKg} kg in the latest check`
+          : `最近一次量度為 ${latestGrowth.heightCm} cm，${latestGrowth.weightKg} kg`
+        : t(lang, "仍等待下一次身高體重量度", "Waiting for the next height and weight check")
+    }
+  ];
+}
+
 export function buildMemberHealthScores({ alex, amelie, growth }, lang = "zh") {
   const alexSteps = Number(alex?.dashboard?.cards?.latestSteps?.value || 0);
   const amelieSteps = Number(amelie?.dashboard?.cards?.latestSteps?.value || 0);
@@ -156,6 +230,10 @@ export function buildMilestones({ alex, amelie, growth }, lang = "zh") {
         type: "growth",
         typeLabel: t(lang, "成長", "Growth"),
         achievedAt: latestGrowthDate,
+        celebration:
+          lang === "en"
+            ? "A big growth moment for Ryan."
+            : "Ryan 又跨過了一個清楚的成長節點。",
         title: lang === "en" ? "Ryan reached 120 cm" : "Ryan 達到 120 cm",
         detail: lang === "en" ? "A new growth milestone worth celebrating." : "這是一個值得記錄的成長里程碑。"
       });
@@ -169,6 +247,10 @@ export function buildMilestones({ alex, amelie, growth }, lang = "zh") {
         type: "weight",
         typeLabel: t(lang, "體重", "Weight"),
         achievedAt: alex?.latestMetrics?.weight?.recordedAt || null,
+        celebration:
+          lang === "en"
+            ? "A meaningful weight-loss milestone."
+            : "這是一個很值得記低的減重成果。",
         title: lang === "en" ? "Alex lost 5 kg" : "Alex 減去 5 kg",
         detail: lang === "en" ? "A major weight milestone has been reached." : "這是一個重要的減重里程碑。"
       });
@@ -183,6 +265,10 @@ export function buildMilestones({ alex, amelie, growth }, lang = "zh") {
         typeLabel: t(lang, "運動", "Workout"),
         achievedAt: [...(amelie?.exerciseLogs || [])]
         .sort((left, right) => new Date(right.performedAt).getTime() - new Date(left.performedAt).getTime())[0]?.performedAt || null,
+        celebration:
+          lang === "en"
+            ? "Consistency is starting to show."
+            : "運動的一致性已經開始建立出來。",
         title: lang === "en" ? "Amelie completed 5 workouts" : "Amelie 完成 5 次運動",
         detail: lang === "en" ? "Workout consistency is building momentum." : "穩定運動的節奏已開始建立。"
     });
@@ -294,7 +380,12 @@ export function buildWeeklyAiSummary({ alex, amelie, growth }, lang = "zh") {
     shareText:
       lang === "en"
         ? `Family Health Report\n\n${ryanText}\n${alexText}\n${amelieText}\n\nRecommended focus:\n- Keep Ryan's measurements regular.\n- Protect workout consistency for both adults.\n- Use reminders as action prompts, not pressure.`
-        : `家庭健康週報\n\n${ryanText}\n${alexText}\n${amelieText}\n\n本週建議：\n- 保持 Ryan 的量度節奏穩定。\n- 兩位大人都要維持運動一致性。\n- 把提醒當成行動提示，而唔係壓力。`
+        : `家庭健康週報\n\n${ryanText}\n${alexText}\n${amelieText}\n\n本週建議：\n- 保持 Ryan 的量度節奏穩定。\n- 兩位大人都要維持運動一致性。\n- 把提醒當成行動提示，而唔係壓力。`,
+    coverTitle: lang === "en" ? "Family Health Weekly Digest" : "家庭健康每週摘要",
+    coverSubtitle:
+      lang === "en"
+        ? "A calmer view of growth, weight, activity, and consistency."
+        : "用更清楚的一頁，睇成長、體重、活動與一致性。"
   };
 }
 
