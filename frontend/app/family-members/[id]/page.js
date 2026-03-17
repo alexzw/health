@@ -17,6 +17,7 @@ import { formatChineseDate, formatMetric, formatRelativeDate, formatValueWithUni
 import { getCoachInsights, getFamilyMember, getGrowthTracking, getWeeklyGoals } from "../../../lib/api";
 import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../../../lib/i18n";
 import { enrichGoalsWithProgress } from "../../../lib/goal-progress";
+import { buildMemberHealthScores } from "../../../lib/daily-engagement";
 import {
   buildMetricSeriesFromRecords,
   filterItemsByRange,
@@ -148,6 +149,14 @@ export default async function FamilyMemberDetailPage({ params, searchParams }) {
         "Start with the latest health signals, then review trends, coaching, and record management."
       );
   const goalsWithProgress = enrichGoalsWithProgress(weeklyGoals, member, growth);
+  const currentMemberScore = buildMemberHealthScores(
+    {
+      alex: member.id === "alex" ? member : null,
+      amelie: member.id === "amelie" ? member : null,
+      growth: member.id === "ryan" ? growth : null
+    },
+    lang
+  ).find((item) => item.id === member.id);
 
   return (
     <section className="space-y-8">
@@ -187,6 +196,25 @@ export default async function FamilyMemberDetailPage({ params, searchParams }) {
             ) : null}
           </div>
         </div>
+        {currentMemberScore ? (
+          <div className="mt-6 rounded-[26px] border border-white/70 bg-white/75 p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="section-kicker">{t(lang, "個人健康分數", "Personal Health Score")}</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">
+                  {currentMemberScore.score} / 100
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{currentMemberScore.status}</p>
+              </div>
+              <div className="w-full max-w-sm">
+                <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                  <div className="h-full rounded-full bg-blue" style={{ width: `${currentMemberScore.score}%` }} />
+                </div>
+                <p className="mt-3 text-sm text-slate-500">{currentMemberScore.detail}</p>
+              </div>
+            </div>
+          </div>
+        ) : null}
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <TimeRangeFilter currentRange={range} basePath={`/family-members/${member.id}`} lang={lang} />
         </div>

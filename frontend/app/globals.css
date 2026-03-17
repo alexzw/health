@@ -123,3 +123,32 @@ a {
   text-transform: uppercase;
   color: var(--ink-muted);
 }
+
+@media print {
+  body {
+    background: white;
+  }
+
+  header,
+  .no-print {
+    display: none !important;
+  }
+
+  .soft-card,
+  .panel-hero,
+  .glass-panel,
+  .report-card {
+    box-shadow: none !important;
+    border: 1px solid #dbe3ee !important;
+    background: white !important;
+    backdrop-filter: none !important;
+  }
+
+  .report-print-shell {
+    max-width: none !important;
+  }
+
+  main {
+    padding-top: 0 !important;
+  }
+}

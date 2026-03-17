@@ -51,7 +51,7 @@ export default async function ReportsPage() {
   const weeklyAiSummary = buildWeeklyAiSummary({ alex, amelie, growth }, lang);
 
   return (
-    <section className="space-y-8">
+    <section className="report-print-shell space-y-8">
       <div className="panel-hero rounded-[40px] p-8 lg:p-10">
         <p className="section-kicker">{t(lang, "每週報告", "Weekly Report")}</p>
         <h1 className="mt-2 text-5xl font-semibold tracking-[-0.05em] text-ink sm:text-6xl">
@@ -64,15 +64,18 @@ export default async function ReportsPage() {
             "See Ryan's growth, Alex and Amelie's weight changes, this week's activity summary, and the most important health insights in one place."
           )}
         </p>
+        <p className="mt-4 text-sm text-slate-500">
+          {t(lang, "報告日期：今天", "Report date: today")}
+        </p>
       </div>
 
-      <div className="soft-card rounded-[30px] p-6 sm:p-7">
+      <div className="soft-card report-card rounded-[30px] p-6 sm:p-7">
         <p className="section-kicker">{t(lang, "AI Summary", "AI Summary")}</p>
         <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
           {t(lang, "可分享的每週解讀", "Shareable Weekly Narrative")}
         </h2>
         <p className="mt-4 text-base leading-7 text-slate-700">{weeklyAiSummary.headline}</p>
-        <div className="mt-5">
+        <div className="no-print mt-5">
           <ReportActions shareText={weeklyAiSummary.shareText} lang={lang} />
         </div>
         <div className="mt-5 grid gap-4 xl:grid-cols-3">

@@ -6,6 +6,30 @@ import { t } from "../lib/i18n";
 
 const FILTERS = ["all", "Ryan", "Alex", "Amelie"];
 
+function getMilestoneAccent(type) {
+  if (type === "growth") {
+    return {
+      bubble: "bg-emerald-500",
+      badge: "bg-emerald-50 text-emerald-700",
+      icon: "🌱"
+    };
+  }
+
+  if (type === "weight") {
+    return {
+      bubble: "bg-sky-500",
+      badge: "bg-sky-50 text-sky-700",
+      icon: "⚖️"
+    };
+  }
+
+  return {
+    bubble: "bg-violet-500",
+    badge: "bg-violet-50 text-violet-700",
+    icon: "🏃"
+  };
+}
+
 export function MilestoneTimeline({ milestones, lang = "zh" }) {
   const [activeFilter, setActiveFilter] = useState("all");
 
@@ -43,18 +67,18 @@ export function MilestoneTimeline({ milestones, lang = "zh" }) {
 
       <div className="grid gap-6">
         {visibleMilestones.length ? (
-          visibleMilestones.map((milestone, index) => (
+          visibleMilestones.map((milestone) => (
             <div key={milestone.id} className="soft-card rounded-[30px] p-6">
               <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-lg font-semibold text-white">
-                  {index + 1}
+                <div className={`flex h-12 w-12 items-center justify-center rounded-full text-lg font-semibold text-white ${getMilestoneAccent(milestone.type).bubble}`}>
+                  {getMilestoneAccent(milestone.type).icon}
                 </div>
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-3">
                     <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
                       {milestone.member}
                     </p>
-                    <p className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
+                    <p className={`rounded-full px-3 py-1 text-xs font-semibold ${getMilestoneAccent(milestone.type).badge}`}>
                       {milestone.typeLabel || milestone.type}
                     </p>
                     {milestone.achievedAt ? (
