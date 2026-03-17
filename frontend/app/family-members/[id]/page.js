@@ -94,6 +94,9 @@ export default async function FamilyMemberDetailPage({ params }) {
 
   const stepsHistory = member.metricTrends?.steps || [];
   const sleepHistory = member.metricTrends?.sleep || [];
+  const waistHistory = member.metricTrends?.waist || [];
+  const hipHistory = member.metricTrends?.hip || [];
+  const chestHistory = member.metricTrends?.chest || [];
   const restingHeartRateHistory = member.metricTrends?.resting_heart_rate || [];
   const heartRateHistory = member.metricTrends?.heart_rate || [];
   const secondaryTrend = pickSecondaryTrend(member.metricTrends);
@@ -281,6 +284,23 @@ export default async function FamilyMemberDetailPage({ params }) {
           <div className="glass-panel rounded-[28px] p-6 shadow-glass">
             <div className="flex items-center justify-between gap-4">
               <div>
+                <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Body Measurement Trends</p>
+                <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">Waist, Hip and Chest</h3>
+              </div>
+              <p className="text-sm text-slate-500">
+                {t(lang, "比單看體重更適合觀察塑形變化", "Useful for shaping progress beyond scale weight")}
+              </p>
+            </div>
+            <div className="mt-5 grid gap-5 lg:grid-cols-3">
+              <MetricHistoryChart items={waistHistory} color="#ff8a65" label="Waist Trend" unit="cm" lang={lang} />
+              <MetricHistoryChart items={hipHistory} color="#7c4dff" label="Hip Trend" unit="cm" lang={lang} />
+              <MetricHistoryChart items={chestHistory} color="#00a3a3" label="Chest Trend" unit="cm" lang={lang} />
+            </div>
+          </div>
+
+          <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+            <div className="flex items-center justify-between gap-4">
+              <div>
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-500">More Charts</p>
                 <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">Apple Health Mini Charts</h3>
               </div>
@@ -298,6 +318,9 @@ export default async function FamilyMemberDetailPage({ params }) {
                 lang={lang}
               />
               <MiniMetricChart items={heartRateHistory} color="#ff8a65" label="Heart Rate" unit="bpm" compact lang={lang} />
+              <MiniMetricChart items={waistHistory} color="#ff8a65" label="Waist" unit="cm" compact lang={lang} />
+              <MiniMetricChart items={hipHistory} color="#7c4dff" label="Hip" unit="cm" compact lang={lang} />
+              <MiniMetricChart items={chestHistory} color="#00a3a3" label="Chest" unit="cm" compact lang={lang} />
             </div>
           </div>
 
