@@ -474,6 +474,11 @@ function AppleHealthPreview({ preview }) {
   );
 }
 
+function basename(filePath = "") {
+  const segments = filePath.split("/");
+  return segments[segments.length - 1] || filePath;
+}
+
 function ActionButton({ children, disabled, onClick, variant = "primary" }) {
   const className =
     variant === "secondary"
@@ -592,7 +597,9 @@ function AppleHealthWorkflowCard({ job, onRefreshPage }) {
           </div>
           {job.result.source ? (
             <div className="mt-4 rounded-2xl bg-white/80 p-4 text-sm text-slate-600">
-              <p>來源 zip：{job.result.source.zipPath}</p>
+              <p>讀取資料夾：{job.result.source.folderPath}</p>
+              <p className="mt-1">zip 檔名：{basename(job.result.source.zipPath)}</p>
+              <p className="mt-1">來源 zip：{job.result.source.zipPath}</p>
               {job.result.source.sinceDate ? (
                 <p className="mt-1">同步範圍：{formatChineseDate(job.result.source.sinceDate)} 之後</p>
               ) : null}
@@ -980,6 +987,17 @@ export function ProfileManagementPanel({ member, growth }) {
                 }}
               >
                 <p className="text-base font-semibold text-ink">身高設定</p>
+                <div className="mt-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  <p>
+                    目前已保存身高：
+                    <span className="ml-2 font-semibold text-ink">
+                      {latestManualHeightRecord?.value ? `${latestManualHeightRecord.value} cm` : "未設定"}
+                    </span>
+                  </p>
+                  {latestManualHeightRecord?.recordedAt ? (
+                    <p className="mt-1">最後更新：{formatChineseDate(latestManualHeightRecord.recordedAt, true)}</p>
+                  ) : null}
+                </div>
                 <div className="mt-4 grid gap-4">
                   <FieldLabel label="身高（cm）">
                     <input
