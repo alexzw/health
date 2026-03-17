@@ -52,9 +52,15 @@ function FieldLabel({ label, children }) {
   );
 }
 
-function SectionCard({ title, description, children }) {
+function SectionCard({ title, description, children, eyebrow, tone = "default" }) {
+  const toneClass =
+    tone === "accent"
+      ? "border-blue/15 bg-[linear-gradient(180deg,rgba(245,250,255,0.95),rgba(255,255,255,0.9))]"
+      : "border-white/70 bg-white/80";
+
   return (
-    <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+    <div className={`glass-panel rounded-[28px] border p-6 shadow-glass ${toneClass}`}>
+      {eyebrow ? <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">{eyebrow}</p> : null}
       <p className="text-lg font-semibold text-ink">{title}</p>
       {description ? <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p> : null}
       <div className="mt-5">{children}</div>
@@ -245,21 +251,43 @@ function HealthRecordGroupList({ memberId, items, onRunAction, isSaving, lang = 
 
   if (!items.length) {
     return (
-      <SectionCard title="快速修改健康紀錄" description="依項目分開管理，會更快。">
-        <p className="text-sm text-slate-500">暫時沒有健康紀錄。</p>
+      <SectionCard
+        eyebrow={t(lang, "手動輸入", "Manual Entries")}
+        title={t(lang, "快速修改健康紀錄", "Quick Edit Health Records")}
+        description={t(lang, "依項目分開管理，會更快。", "Records are grouped by metric for faster editing.")}
+      >
+        <EmptyActionState
+          lang={lang}
+          title={t(lang, "還未有手動健康紀錄", "No manual health records yet")}
+          description={t(
+            lang,
+            "先新增一筆體重、圍度或心率紀錄，之後就可以在這裡快速修改。",
+            "Add a weight, body measurement, or heart-rate record first. You can edit it here afterwards."
+          )}
+        />
       </SectionCard>
     );
   }
 
   return (
-    <SectionCard title="快速修改健康紀錄" description="體重、心率、步數等已分開顯示，每條都可直接保存或一鍵刪除。">
+    <SectionCard
+      eyebrow={t(lang, "手動輸入", "Manual Entries")}
+      title={t(lang, "快速修改健康紀錄", "Quick Edit Health Records")}
+      description={t(
+        lang,
+        "體重、心率、步數等已分開顯示，每條都可直接保存或一鍵刪除。",
+        "Weight, heart rate, steps, and other metrics are grouped for direct editing and quick delete."
+      )}
+    >
       <div className="space-y-5">
         {groupedItems.map((group) => (
           <div key={group.key} className="rounded-[24px] border border-white/70 bg-white/70 p-4">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <p className="text-base font-semibold text-ink">{group.label}</p>
-                <p className="text-sm text-slate-500">{group.items.length} 條紀錄</p>
+                <p className="text-sm text-slate-500">
+                  {t(lang, `${group.items.length} 條手動紀錄`, `${group.items.length} manual entries`)}
+                </p>
               </div>
             </div>
             <div className="space-y-4">
@@ -445,35 +473,35 @@ function EditableList({
   );
 }
 
-function AppleHealthPreview({ preview }) {
+function AppleHealthPreview({ preview, lang = "zh" }) {
   if (!preview) {
     return null;
   }
 
   return (
     <div className="rounded-[24px] border border-slate-200 bg-white/80 p-5">
-      <p className="text-base font-semibold text-ink">匯入預覽</p>
+      <p className="text-base font-semibold text-ink">{t(lang, "匯入預覽", "Import Preview")}</p>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <div className="rounded-2xl bg-slate-50 p-4">
-          <p className="text-sm text-slate-500">會新增健康紀錄</p>
+          <p className="text-sm text-slate-500">{t(lang, "會新增健康紀錄", "New health records")}</p>
           <p className="mt-1 text-2xl font-semibold text-ink">
             {preview.preview.newRecordCount}
           </p>
         </div>
         <div className="rounded-2xl bg-slate-50 p-4">
-          <p className="text-sm text-slate-500">會略過重複健康紀錄</p>
+          <p className="text-sm text-slate-500">{t(lang, "會略過重複健康紀錄", "Duplicate health records skipped")}</p>
           <p className="mt-1 text-2xl font-semibold text-ink">
             {preview.preview.duplicateRecordCount}
           </p>
         </div>
         <div className="rounded-2xl bg-slate-50 p-4">
-          <p className="text-sm text-slate-500">會新增運動紀錄</p>
+          <p className="text-sm text-slate-500">{t(lang, "會新增運動紀錄", "New workouts")}</p>
           <p className="mt-1 text-2xl font-semibold text-ink">
             {preview.preview.newWorkoutCount}
           </p>
         </div>
         <div className="rounded-2xl bg-slate-50 p-4">
-          <p className="text-sm text-slate-500">會略過重複運動紀錄</p>
+          <p className="text-sm text-slate-500">{t(lang, "會略過重複運動紀錄", "Duplicate workouts skipped")}</p>
           <p className="mt-1 text-2xl font-semibold text-ink">
             {preview.preview.duplicateWorkoutCount}
           </p>
@@ -481,25 +509,25 @@ function AppleHealthPreview({ preview }) {
       </div>
       {preview.source ? (
         <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
-          <p>來源資料夾：{preview.source.folderPath}</p>
-          <p className="mt-1">最新 zip：{preview.source.zipPath}</p>
-          <p className="mt-1">匯入檔案：{preview.source.exportXmlPath}</p>
+          <p>{t(lang, "來源資料夾：", "Folder:")}{preview.source.folderPath}</p>
+          <p className="mt-1">{t(lang, "最新 zip：", "Latest zip:")}{preview.source.zipPath}</p>
+          <p className="mt-1">{t(lang, "匯入檔案：", "Export file:")}{preview.source.exportXmlPath}</p>
           {preview.source.sinceDate ? (
-            <p className="mt-1">同步範圍：{formatChineseDate(preview.source.sinceDate)} 之後</p>
+            <p className="mt-1">{t(lang, "同步範圍：", "Sync window:")}{formatChineseDate(preview.source.sinceDate, false, lang)} {t(lang, "之後", "onwards")}</p>
           ) : null}
         </div>
       ) : null}
       {preview.preview.sampleRecords?.length ? (
         <div className="mt-4">
-          <p className="text-sm font-semibold text-ink">健康紀錄預覽</p>
+          <p className="text-sm font-semibold text-ink">{t(lang, "健康紀錄預覽", "Health Records Preview")}</p>
           <div className="mt-2 space-y-2">
             {preview.preview.sampleRecords.map((record, index) => (
               <div
                 key={`${record.category}-${record.recordedAt}-${index}`}
                 className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600"
               >
-                {formatCategoryLabel(record.category)}: {record.value} {record.unit || ""}，
-                {formatChineseDate(record.recordedAt, true)}
+                {formatCategoryLabel(record.category, lang)}: {record.value} {record.unit || ""}，
+                {formatChineseDate(record.recordedAt, true, lang)}
               </div>
             ))}
           </div>
@@ -507,15 +535,15 @@ function AppleHealthPreview({ preview }) {
       ) : null}
       {preview.preview.sampleWorkouts?.length ? (
         <div className="mt-4">
-          <p className="text-sm font-semibold text-ink">運動紀錄預覽</p>
+          <p className="text-sm font-semibold text-ink">{t(lang, "運動紀錄預覽", "Workout Preview")}</p>
           <div className="mt-2 space-y-2">
             {preview.preview.sampleWorkouts.map((workout, index) => (
               <div
                 key={`${workout.workoutType}-${workout.performedAt}-${index}`}
                 className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600"
               >
-                {workout.workoutType}，{workout.durationMinutes} 分鐘，
-                {formatChineseDate(workout.performedAt, true)}
+                {workout.workoutType}，{workout.durationMinutes} {t(lang, "分鐘", "min")}，
+                {formatChineseDate(workout.performedAt, true, lang)}
               </div>
             ))}
           </div>
@@ -543,19 +571,75 @@ function ActionButton({ children, disabled, onClick, variant = "primary" }) {
   );
 }
 
-function AppleHealthWorkflowCard({ job, onRefreshPage }) {
+function ManagementIntro({ title, description, status, lang }) {
+  return (
+    <div className="rounded-[32px] border border-white/70 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(240,247,255,0.94))] p-6 shadow-glass">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+            {t(lang, "資料管理", "Data Management")}
+          </p>
+          <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">{title}</h3>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">{description}</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {status.map((item) => (
+            <div key={item.label} className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
+              <p className="mt-1 text-sm font-semibold text-ink">{item.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmptyActionState({ title, description, actionLabel, onAction, lang }) {
+  return (
+    <div className="rounded-[24px] border border-dashed border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(255,255,255,0.96))] p-6 text-center">
+      <p className="text-base font-semibold text-ink">{title}</p>
+      <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">{description}</p>
+      {onAction ? (
+        <div className="mt-4">
+          <ActionButton variant="secondary" onClick={onAction}>
+            {actionLabel || t(lang, "立即開始", "Get started")}
+          </ActionButton>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function AppleHealthWorkflowCard({ job, onRefreshPage, lang = "zh" }) {
   if (!job) {
     return null;
   }
 
   const steps =
     job.kind === "preview-latest"
-      ? ["尋找 iCloud Drive 最新 zip", "解壓 export.xml", "分析最近 30 日資料"]
+      ? [
+          t(lang, "尋找 iCloud Drive 最新 zip", "Find the latest iCloud Drive zip"),
+          t(lang, "解壓 export.xml", "Extract export.xml"),
+          t(lang, "分析最近 30 日資料", "Analyze the last 30 days of data")
+        ]
       : job.kind === "import-latest"
-        ? ["尋找 iCloud Drive 最新 zip", "解壓 export.xml", "寫入 PostgreSQL"]
+        ? [
+            t(lang, "尋找 iCloud Drive 最新 zip", "Find the latest iCloud Drive zip"),
+            t(lang, "解壓 export.xml", "Extract export.xml"),
+            t(lang, "寫入 PostgreSQL", "Write to PostgreSQL")
+          ]
         : job.kind === "preview-file"
-          ? ["讀取你上傳的 export.xml", "分析可匯入資料", "產生預覽摘要"]
-          : ["讀取你上傳的 export.xml", "寫入 PostgreSQL", "整理匯入結果"];
+          ? [
+              t(lang, "讀取你上傳的 export.xml", "Read the uploaded export.xml"),
+              t(lang, "分析可匯入資料", "Analyze importable data"),
+              t(lang, "產生預覽摘要", "Generate a preview summary")
+            ]
+          : [
+              t(lang, "讀取你上傳的 export.xml", "Read the uploaded export.xml"),
+              t(lang, "寫入 PostgreSQL", "Write to PostgreSQL"),
+              t(lang, "整理匯入結果", "Prepare the import summary")
+            ];
 
   return (
     <div className="space-y-4">
@@ -602,12 +686,12 @@ function AppleHealthWorkflowCard({ job, onRefreshPage }) {
       {job.result ? (
         <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 p-5">
           <p className="text-base font-semibold text-ink">
-            {job.result.preview ? "最近一次預覽結果" : "最近一次匯入結果"}
+            {job.result.preview ? t(lang, "最近一次預覽結果", "Latest preview result") : t(lang, "最近一次匯入結果", "Latest import result")}
           </p>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <div className="rounded-2xl bg-white/80 p-4">
               <p className="text-sm text-slate-500">
-                {job.result.preview ? "會新增健康紀錄" : "新增健康紀錄"}
+                {job.result.preview ? t(lang, "會新增健康紀錄", "New health records") : t(lang, "新增健康紀錄", "Imported health records")}
               </p>
               <p className="mt-1 text-2xl font-semibold text-ink">
                 {job.result.preview
@@ -617,7 +701,7 @@ function AppleHealthWorkflowCard({ job, onRefreshPage }) {
             </div>
             <div className="rounded-2xl bg-white/80 p-4">
               <p className="text-sm text-slate-500">
-                {job.result.preview ? "會略過重複健康紀錄" : "略過重複健康紀錄"}
+                {job.result.preview ? t(lang, "會略過重複健康紀錄", "Duplicate health records skipped") : t(lang, "略過重複健康紀錄", "Duplicate health records skipped")}
               </p>
               <p className="mt-1 text-2xl font-semibold text-ink">
                 {job.result.preview
@@ -627,7 +711,7 @@ function AppleHealthWorkflowCard({ job, onRefreshPage }) {
             </div>
             <div className="rounded-2xl bg-white/80 p-4">
               <p className="text-sm text-slate-500">
-                {job.result.preview ? "會新增運動紀錄" : "新增運動紀錄"}
+                {job.result.preview ? t(lang, "會新增運動紀錄", "New workouts") : t(lang, "新增運動紀錄", "Imported workouts")}
               </p>
               <p className="mt-1 text-2xl font-semibold text-ink">
                 {job.result.preview
@@ -637,7 +721,7 @@ function AppleHealthWorkflowCard({ job, onRefreshPage }) {
             </div>
             <div className="rounded-2xl bg-white/80 p-4">
               <p className="text-sm text-slate-500">
-                {job.result.preview ? "會略過重複運動紀錄" : "略過重複運動紀錄"}
+                {job.result.preview ? t(lang, "會略過重複運動紀錄", "Duplicate workouts skipped") : t(lang, "略過重複運動紀錄", "Duplicate workouts skipped")}
               </p>
               <p className="mt-1 text-2xl font-semibold text-ink">
                 {job.result.preview
@@ -648,18 +732,18 @@ function AppleHealthWorkflowCard({ job, onRefreshPage }) {
           </div>
           {job.result.source ? (
             <div className="mt-4 rounded-2xl bg-white/80 p-4 text-sm text-slate-600">
-              <p>讀取資料夾：{job.result.source.folderPath}</p>
-              <p className="mt-1">zip 檔名：{basename(job.result.source.zipPath)}</p>
-              <p className="mt-1">來源 zip：{job.result.source.zipPath}</p>
+              <p>{t(lang, "讀取資料夾：", "Folder:")}{job.result.source.folderPath}</p>
+              <p className="mt-1">{t(lang, "zip 檔名：", "Zip file:")}{basename(job.result.source.zipPath)}</p>
+              <p className="mt-1">{t(lang, "來源 zip：", "Source zip:")}{job.result.source.zipPath}</p>
               {job.result.source.sinceDate ? (
-                <p className="mt-1">同步範圍：{formatChineseDate(job.result.source.sinceDate)} 之後</p>
+                <p className="mt-1">{t(lang, "同步範圍：", "Sync window:")}{formatChineseDate(job.result.source.sinceDate, false, lang)} {t(lang, "之後", "onwards")}</p>
               ) : null}
             </div>
           ) : null}
           {!job.result.preview ? (
             <div className="mt-4 flex flex-wrap gap-3">
               <ActionButton variant="secondary" onClick={onRefreshPage}>
-                重新讀取頁面資料
+                {t(lang, "重新讀取頁面資料", "Refresh page data")}
               </ActionButton>
             </div>
           ) : null}
@@ -967,7 +1051,11 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
   function renderProfileTab() {
     return (
       <div className="space-y-5">
-        <SectionCard title={t(lang, "編輯個人資料", "Edit Profile")} description={t(lang, "修改姓名、性別和生日。", "Update name, gender, and birthday.")}>
+        <SectionCard
+          eyebrow={t(lang, "基本資料", "Profile Basics")}
+          title={t(lang, "編輯個人資料", "Edit Profile")}
+          description={t(lang, "修改姓名、性別和生日。", "Update name, gender, and birthday.")}
+        >
           <form
             className="space-y-4"
             onSubmit={(event) => {
@@ -1011,7 +1099,12 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
         </SectionCard>
 
         {isAdult ? (
-          <SectionCard title={t(lang, "身體資料", "Body Metrics")} description={t(lang, "身高較少變動，可以在這裡設定；體重則可快速補一筆最新紀錄。", "Set height here and quickly add the latest weight record.")}>
+          <SectionCard
+            eyebrow={t(lang, "身體數據", "Body Metrics")}
+            title={t(lang, "身體資料", "Body Metrics")}
+            description={t(lang, "身高較少變動，可以在這裡設定；體重則可快速補一筆最新紀錄。", "Set height here and quickly add the latest weight record.")}
+            tone="accent"
+          >
             <div className="grid gap-5 lg:grid-cols-3">
               <form
                 className="rounded-[24px] border border-white/70 bg-white/70 p-5"
@@ -1291,7 +1384,11 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
   function renderRecordTab() {
     return (
       <div className="space-y-5">
-        <SectionCard title={t(lang, "新增健康紀錄", "Add Health Record")} description={t(lang, "先新增，再直接在下方依項目快速管理。", "Add a record first, then manage it below by category.")}>
+        <SectionCard
+          eyebrow={t(lang, "新增資料", "Add Data")}
+          title={t(lang, "新增健康紀錄", "Add Health Record")}
+          description={t(lang, "先新增，再直接在下方依項目快速管理。", "Add a record first, then manage it below by category.")}
+        >
           <form
             className="grid gap-4 md:grid-cols-2"
             onSubmit={(event) => {
@@ -1392,7 +1489,12 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
   function renderGrowthTab() {
     return (
       <div className="space-y-5">
-        <SectionCard title="新增成長測量" description="新增完之後，下方每條可以直接編輯或刪除。">
+        <SectionCard
+          eyebrow={t(lang, "Ryan Growth", "Ryan Growth")}
+          title={t(lang, "新增成長測量", "Add Growth Measurement")}
+          description={t(lang, "新增完之後，下方每條可以直接編輯或刪除。", "Add a growth entry first, then edit or delete each record below.")}
+          tone="accent"
+        >
           <form
             className="grid gap-4 md:grid-cols-2"
             onSubmit={(event) => {
@@ -1403,11 +1505,11 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
                     ...newGrowthForm,
                     measuredAt: new Date(newGrowthForm.measuredAt).toISOString()
                   }),
-                "成長數據已新增"
+                t(lang, "成長數據已新增", "Growth record added")
               );
             }}
           >
-            <FieldLabel label="身高（cm）">
+            <FieldLabel label={t(lang, "身高（cm）", "Height (cm)")}>
               <input
                 className={baseInputClass}
                 value={newGrowthForm.heightCm}
@@ -1416,7 +1518,7 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
                 }
               />
             </FieldLabel>
-            <FieldLabel label="體重（kg）">
+            <FieldLabel label={t(lang, "體重（kg）", "Weight (kg)")}>
               <input
                 className={baseInputClass}
                 value={newGrowthForm.weightKg}
@@ -1425,7 +1527,7 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
                 }
               />
             </FieldLabel>
-            <FieldLabel label="測量時間">
+            <FieldLabel label={t(lang, "測量時間", "Measured At")}>
               <input
                 type="datetime-local"
                 className={baseInputClass}
@@ -1436,14 +1538,14 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
               />
             </FieldLabel>
             <div className="md:col-span-2">
-              <SubmitButton disabled={isSaving}>新增成長數據</SubmitButton>
+              <SubmitButton disabled={isSaving}>{t(lang, "新增成長數據", "Add growth record")}</SubmitButton>
             </div>
           </form>
         </SectionCard>
 
         <EditableList
-          title="快速修改成長數據"
-          description="每條測量都可以直接保存或刪除。"
+          title={t(lang, "快速修改成長數據", "Quick Edit Growth Records")}
+          description={t(lang, "每條測量都可以直接保存或刪除。", "Each growth entry can be saved or deleted directly.")}
           items={growth?.measurements || []}
           getKey={(item) => item.id}
           getTitle={(item) => `${item.heightCm} cm / ${item.weightKg} kg`}
@@ -1455,21 +1557,21 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
           })}
           renderFields={(draft, updateDraft) => (
             <div className="grid gap-4 md:grid-cols-2">
-              <FieldLabel label="身高（cm）">
+              <FieldLabel label={t(lang, "身高（cm）", "Height (cm)")}>
                 <input
                   className={baseInputClass}
                   value={draft.heightCm}
                   onChange={(event) => updateDraft({ heightCm: event.target.value })}
                 />
               </FieldLabel>
-              <FieldLabel label="體重（kg）">
+              <FieldLabel label={t(lang, "體重（kg）", "Weight (kg)")}>
                 <input
                   className={baseInputClass}
                   value={draft.weightKg}
                   onChange={(event) => updateDraft({ weightKg: event.target.value })}
                 />
               </FieldLabel>
-              <FieldLabel label="測量時間">
+              <FieldLabel label={t(lang, "測量時間", "Measured At")}>
                 <input
                   type="datetime-local"
                   className={baseInputClass}
@@ -1486,15 +1588,15 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
                   ...draft,
                   measuredAt: new Date(draft.measuredAt).toISOString()
                 }),
-              "成長數據已更新"
+              t(lang, "成長數據已更新", "Growth record updated")
             )
           }
           onDelete={(item) =>
-            runAction(() => deleteGrowthMeasurement(member.id, item.id), "成長數據已刪除")
+            runAction(() => deleteGrowthMeasurement(member.id, item.id), t(lang, "成長數據已刪除", "Growth record deleted"))
           }
           isSaving={isSaving}
-          emptyText="暫時沒有成長數據。"
-          deleteLabel="成長數據"
+          emptyText={t(lang, "暫時沒有成長數據。", "No growth records yet.")}
+          deleteLabel={t(lang, "成長數據", "Growth record")}
           itemIdPrefix="growth-record"
         />
       </div>
@@ -1504,7 +1606,11 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
   function renderExerciseTab() {
     return (
       <div className="space-y-5">
-        <SectionCard title={t(lang, "新增運動紀錄", "Add Workout")} description={t(lang, "揀運動類型後，系統會按你的最近體重自動估算卡路里。", "Calories are auto-estimated from the selected workout type and your latest weight.")}>
+        <SectionCard
+          eyebrow={t(lang, "手動輸入", "Manual Entries")}
+          title={t(lang, "新增運動紀錄", "Add Workout")}
+          description={t(lang, "揀運動類型後，系統會按你的最近體重自動估算卡路里。", "Calories are auto-estimated from the selected workout type and your latest weight.")}
+        >
           <form
             className="grid gap-4 md:grid-cols-2"
             autoComplete="off"
@@ -1716,8 +1822,10 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
     return (
       <div className="space-y-5">
         <SectionCard
+          eyebrow="Apple Health"
           title={t(lang, "Apple Health 自動匯入", "Apple Health Auto Import")}
           description={t(lang, "建議先看預覽，再正式匯入。每一步都會顯示明確狀態。", "Preview first, then import. Each step shows a clear status.")}
+          tone="accent"
         >
           <div className="grid gap-4 md:grid-cols-2">
             <div className="rounded-2xl bg-slate-50 p-5">
@@ -1750,18 +1858,19 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
           <p className="mt-4 text-sm leading-6 text-slate-500">
             {t(lang, "系統會自動讀取", "The system will automatically read")}
             <span className="mx-1 rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
-              iCloud Drive/Apple Health/
+              {`iCloud Drive/Apple Health/${member.name}`}
             </span>
-            {t(lang, "裡最新的 zip，解壓後自動找到", "for the latest zip, unpack it, find")} <code>export.xml</code>{t(lang, "，並只同步最近 30 日資料。", ", and sync only the most recent 30 days of data.")}
+            {t(lang, "資料夾裡最新的 zip，解壓後自動找到", "for the latest zip in that folder, unpack it, find")} <code>export.xml</code>{t(lang, "，並只同步最近 30 日資料。", ", and sync only the most recent 30 days of data.")}
           </p>
         </SectionCard>
 
         <SectionCard
-          title="手動上傳 Apple Health 匯出檔"
-          description="如果你想自己選檔，也建議先預覽再匯入。"
+          eyebrow="Fallback"
+          title={t(lang, "手動上傳 Apple Health 匯出檔", "Manual Apple Health Upload")}
+          description={t(lang, "如果你想自己選檔，也建議先預覽再匯入。", "If you prefer manual upload, preview before importing.")}
         >
           <div className="space-y-4">
-            <FieldLabel label="選擇 export.xml">
+            <FieldLabel label={t(lang, "選擇 export.xml", "Choose export.xml")}>
               <input
                 type="file"
                 accept=".xml,text/xml"
@@ -1776,28 +1885,58 @@ export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
             <div className="flex flex-col gap-3 md:flex-row">
               <ActionButton disabled={!appleHealthFile || isAppleHealthBusy} onClick={handleAppleHealthPreviewFile}>
                 {isAppleHealthBusy && appleHealthJob?.kind === "preview-file"
-                  ? "正在分析上傳檔案..."
-                  : "先看預覽"}
+                  ? t(lang, "正在分析上傳檔案...", "Previewing uploaded file...")
+                  : t(lang, "先看預覽", "Preview")}
               </ActionButton>
               <ActionButton disabled={!appleHealthFile || isAppleHealthBusy} onClick={handleAppleHealthImportFile}>
                 {isAppleHealthBusy && appleHealthJob?.kind === "import-file"
-                  ? "正在匯入上傳檔案..."
-                  : "開始匯入"}
+                  ? t(lang, "正在匯入上傳檔案...", "Importing uploaded file...")
+                  : t(lang, "開始匯入", "Import")}
               </ActionButton>
             </div>
           </div>
         </SectionCard>
 
-        <AppleHealthWorkflowCard job={appleHealthJob} onRefreshPage={() => router.refresh()} />
+        <AppleHealthWorkflowCard job={appleHealthJob} onRefreshPage={() => router.refresh()} lang={lang} />
 
-        <AppleHealthPreview preview={appleHealthPreview} />
+        <AppleHealthPreview preview={appleHealthPreview} lang={lang} />
       </div>
     );
   }
 
+  const managementStatus = [
+    {
+      label: t(lang, "管理模式", "Workflow"),
+      value: isAdult ? t(lang, "手動記錄 + Apple Health", "Manual + Apple Health") : t(lang, "兒童成長管理", "Child Growth Tracking")
+    },
+    {
+      label: t(lang, "目前分頁", "Active Tab"),
+      value: tabs.find((tab) => tab.id === activeTab)?.label || ""
+    }
+  ];
+
   return (
     <section className="space-y-6">
-      <div className="flex flex-wrap gap-3">
+      <ManagementIntro
+        lang={lang}
+        title={t(lang, `${member.name} 的資料工作台`, `${member.name}'s data workspace`)}
+        description={
+          isAdult
+            ? t(
+                lang,
+                "把手動記錄、運動紀錄和 Apple Health 同步集中在同一個地方，先看摘要，再逐步處理。",
+                "Keep manual records, workouts, and Apple Health sync in one focused workflow: review the summary, then take action."
+              )
+            : t(
+                lang,
+                "這裡是 Ryan 的成長管理區。先記錄身高體重，再回到上方圖表查看趨勢。",
+                "This is Ryan's growth workspace. Add height and weight entries here, then return to the charts above to review the trend."
+              )
+        }
+        status={managementStatus}
+      />
+
+      <div className="flex flex-wrap gap-3 rounded-[24px] border border-white/70 bg-white/70 p-2 shadow-sm">
         {tabs.map((tab) => (
           <button
             key={tab.id}
