@@ -1,5 +1,7 @@
-function formatDate(dateString) {
-  return new Date(dateString).toLocaleDateString("zh-HK", {
+import { getLocale, t } from "../lib/i18n";
+
+function formatDate(dateString, lang) {
+  return new Date(dateString).toLocaleDateString(getLocale(lang), {
     year: "numeric",
     month: "short"
   });
@@ -31,14 +33,14 @@ function createChartPoints(measurements, key, width, height, padding) {
     .join(" ");
 }
 
-export function GrowthChart({ measurements, metric, color, label, unit }) {
+export function GrowthChart({ measurements, metric, color, label, unit, lang = "zh" }) {
   if (!measurements?.length) {
     return (
       <div className="glass-panel rounded-[28px] p-6 shadow-glass">
         <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{label}</p>
-        <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">No data yet</h3>
+        <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">{t(lang, "暫時未有資料", "No data yet")}</h3>
         <p className="mt-4 text-sm leading-6 text-slate-500">
-          Add Ryan&apos;s first growth measurement to start this chart.
+          {t(lang, "加入 Ryan 第一筆成長測量後，這張圖就會出現。", "Add Ryan's first growth measurement to start this chart.")}
         </p>
       </div>
     );
@@ -59,7 +61,7 @@ export function GrowthChart({ measurements, metric, color, label, unit }) {
             {latestMeasurement[metric]} {unit}
           </h3>
         </div>
-        <p className="text-sm text-slate-500">{formatDate(latestMeasurement.measuredAt)}</p>
+        <p className="text-sm text-slate-500">{formatDate(latestMeasurement.measuredAt, lang)}</p>
       </div>
 
       <svg viewBox={`0 0 ${width} ${height}`} className="mt-6 h-56 w-full">
@@ -101,7 +103,7 @@ export function GrowthChart({ measurements, metric, color, label, unit }) {
       <div className="mt-4 flex flex-wrap gap-3 text-xs text-slate-500">
         {sampleMeasurements(measurements).map((measurement) => (
           <span key={measurement.id} className="rounded-full bg-white/70 px-3 py-1">
-            {formatDate(measurement.measuredAt)}
+            {formatDate(measurement.measuredAt, lang)}
           </span>
         ))}
       </div>

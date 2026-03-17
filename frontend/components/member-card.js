@@ -1,5 +1,6 @@
 import { formatChineseDate } from "../lib/format";
 import Link from "next/link";
+import { t } from "../lib/i18n";
 
 function getAvatarConfig(member) {
   const configs = {
@@ -25,7 +26,7 @@ function getAvatarConfig(member) {
   );
 }
 
-export function MemberCard({ member }) {
+export function MemberCard({ member, lang = "zh" }) {
   const avatar = getAvatarConfig(member);
 
   return (
@@ -43,10 +44,10 @@ export function MemberCard({ member }) {
           <div>
             <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
               {member.familyRole === "Father"
-                ? "Father"
+                ? t(lang, "爸爸", "Father")
                 : member.familyRole === "Mother"
-                  ? "Mother"
-                  : "Child"}
+                  ? t(lang, "媽媽", "Mother")
+                  : t(lang, "孩子", "Child")}
             </p>
             <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
               {member.name}
@@ -54,21 +55,25 @@ export function MemberCard({ member }) {
           </div>
         </div>
         <span className="rounded-full bg-blueSoft px-3 py-1 text-sm font-medium text-blue">
-          {member.age} yrs
+          {member.age} {t(lang, "歲", "yrs")}
         </span>
       </div>
       <div className="mt-5 rounded-[24px] bg-white/70 px-4 py-4">
-        <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Profile</p>
+        <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{t(lang, "個人資料", "Profile")}</p>
         <p className="mt-3 text-sm text-slate-500">
-          {member.gender === "Male" ? "Male" : member.gender === "Female" ? "Female" : member.gender}
+          {member.gender === "Male" ? t(lang, "男", "Male") : member.gender === "Female" ? t(lang, "女", "Female") : member.gender}
         </p>
-        <p className="mt-2 text-sm text-slate-500">{formatChineseDate(member.dateOfBirth)}</p>
+        <p className="mt-2 text-sm text-slate-500">{formatChineseDate(member.dateOfBirth, false, lang)}</p>
       </div>
-      <p className="mt-6 text-sm text-slate-700">Health Records: {member.totalHealthRecordCount || 0}</p>
-      <p className="mt-2 text-sm text-slate-500">Workout Records: {member.totalExerciseLogCount || 0}</p>
+      <p className="mt-6 text-sm text-slate-700">
+        {t(lang, "健康紀錄", "Health Records")}: {member.totalHealthRecordCount || 0}
+      </p>
+      <p className="mt-2 text-sm text-slate-500">
+        {t(lang, "運動紀錄", "Workout Records")}: {member.totalExerciseLogCount || 0}
+      </p>
       {member.latestBmi ? <p className="mt-2 text-sm text-slate-500">BMI {member.latestBmi}</p> : null}
       <div className="mt-8 text-sm font-semibold text-blue transition group-hover:translate-x-1">
-        View Profile →
+        {t(lang, "查看檔案", "View Profile")} →
       </div>
     </Link>
   );

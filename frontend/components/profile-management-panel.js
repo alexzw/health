@@ -19,6 +19,7 @@ import {
   updateHealthRecord
 } from "../lib/api";
 import { formatCategoryLabel, formatChineseDate } from "../lib/format";
+import { t } from "../lib/i18n";
 
 const baseInputClass =
   "mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink outline-none transition focus:border-blue focus:ring-4 focus:ring-blue/10";
@@ -104,6 +105,41 @@ const WORKOUT_TYPE_PRESETS = [
   { value: "跳繩", label: "跳繩", met: 11 }
 ];
 
+function translateHealthPresetLabel(lang, value) {
+  const labels = {
+    weight: t(lang, "體重", "Weight"),
+    height: t(lang, "身高", "Height"),
+    heart_rate: t(lang, "心率", "Heart Rate"),
+    resting_heart_rate: t(lang, "靜止心率", "Resting Heart Rate"),
+    steps: t(lang, "步數", "Steps"),
+    sleep: t(lang, "睡眠", "Sleep")
+  };
+
+  return labels[value] || value;
+}
+
+function translateWorkoutType(lang, value) {
+  const labels = {
+    步行: t(lang, "步行", "Walking"),
+    快走: t(lang, "快走", "Brisk Walk"),
+    跑步: t(lang, "跑步", "Running"),
+    健身: t(lang, "健身", "Gym Workout"),
+    力量訓練: t(lang, "力量訓練", "Strength Training"),
+    HIIT: "HIIT",
+    單車: t(lang, "單車", "Cycling"),
+    游泳: t(lang, "游泳", "Swimming"),
+    瑜伽: t(lang, "瑜伽", "Yoga"),
+    普拉提: t(lang, "普拉提", "Pilates"),
+    羽毛球: t(lang, "羽毛球", "Badminton"),
+    籃球: t(lang, "籃球", "Basketball"),
+    足球: t(lang, "足球", "Football"),
+    行山: t(lang, "行山", "Hiking"),
+    跳繩: t(lang, "跳繩", "Jump Rope")
+  };
+
+  return labels[value] || value;
+}
+
 function estimateCaloriesBurned(workoutType, durationMinutes, weightKg) {
   if (!workoutType || !durationMinutes) {
     return "";
@@ -145,7 +181,7 @@ function getHealthCategoryOrder(category) {
   return map[normalizeRecordCategory(category)] ?? 99;
 }
 
-function HealthRecordGroupList({ memberId, items, onRunAction, isSaving }) {
+function HealthRecordGroupList({ memberId, items, onRunAction, isSaving, lang = "zh" }) {
   const groupedItems = useMemo(() => {
     const groups = new Map();
 
@@ -163,11 +199,11 @@ function HealthRecordGroupList({ memberId, items, onRunAction, isSaving }) {
           return order;
         }
 
-        return formatCategoryLabel(left[0]).localeCompare(formatCategoryLabel(right[0]), "zh-HK");
+        return formatCategoryLabel(left[0], lang).localeCompare(formatCategoryLabel(right[0], lang), "zh-HK");
       })
       .map(([key, groupItems]) => ({
         key,
-        label: formatCategoryLabel(key),
+        label: formatCategoryLabel(key, lang),
         items: [...groupItems].sort(
           (left, right) => new Date(right.recordedAt).getTime() - new Date(left.recordedAt).getTime()
         )
@@ -246,7 +282,7 @@ function HealthRecordGroupList({ memberId, items, onRunAction, isSaving }) {
                           {item.value} {item.unit || ""}
                         </p>
                         <p className="text-sm text-slate-500">
-                          {formatChineseDate(item.recordedAt, true)}
+                          {formatChineseDate(item.recordedAt, true, lang)}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -622,7 +658,7 @@ function AppleHealthWorkflowCard({ job, onRefreshPage }) {
   );
 }
 
-export function ProfileManagementPanel({ member, growth }) {
+export function ProfileManagementPanel({ member, growth, lang = "zh" }) {
   const router = useRouter();
   const isAdult = member.familyRole !== "Child";
   const latestWeightValue =
@@ -638,13 +674,13 @@ export function ProfileManagementPanel({ member, growth }) {
   const manualHealthRecords = (member.healthDataRecords || []).filter(isManualRecord);
   const manualExerciseLogs = (member.exerciseLogs || []).filter(isManualExerciseLog);
   const tabs = [
-    { id: "profile", label: "個人資料" },
-    { id: "record", label: "健康紀錄" },
-    { id: isAdult ? "exercise" : "growth", label: isAdult ? "運動紀錄" : "成長數據" }
+    { id: "profile", label: t(lang, "個人資料", "Profile") },
+    { id: "record", label: t(lang, "健康紀錄", "Health Records") },
+    { id: isAdult ? "exercise" : "growth", label: isAdult ? t(lang, "運動紀錄", "Workouts") : t(lang, "成長數據", "Growth") }
   ];
 
   if (isAdult) {
-    tabs.push({ id: "apple-health", label: "Apple Health 匯入" });
+    tabs.push({ id: "apple-health", label: t(lang, "Apple Health 匯入", "Apple Health Import") });
   }
 
   const [activeTab, setActiveTab] = useState("profile");
@@ -895,15 +931,15 @@ export function ProfileManagementPanel({ member, growth }) {
   function renderProfileTab() {
     return (
       <div className="space-y-5">
-        <SectionCard title="編輯個人資料" description="修改姓名、性別和生日。">
+        <SectionCard title={t(lang, "編輯個人資料", "Edit Profile")} description={t(lang, "修改姓名、性別和生日。", "Update name, gender, and birthday.")}>
           <form
             className="space-y-4"
             onSubmit={(event) => {
               event.preventDefault();
-              runAction(() => updateFamilyMember(member.id, profileForm), "個人資料已更新");
+              runAction(() => updateFamilyMember(member.id, profileForm), t(lang, "個人資料已更新", "Profile updated"));
             }}
           >
-            <FieldLabel label="姓名">
+            <FieldLabel label={t(lang, "姓名", "Name")}>
               <input
                 className={baseInputClass}
                 value={profileForm.name}
@@ -912,7 +948,7 @@ export function ProfileManagementPanel({ member, growth }) {
                 }
               />
             </FieldLabel>
-            <FieldLabel label="性別">
+            <FieldLabel label={t(lang, "性別", "Gender")}>
               <select
                 className={baseInputClass}
                 value={profileForm.gender}
@@ -920,11 +956,11 @@ export function ProfileManagementPanel({ member, growth }) {
                   setProfileForm((current) => ({ ...current, gender: event.target.value }))
                 }
               >
-                <option value="Male">男</option>
-                <option value="Female">女</option>
+                <option value="Male">{t(lang, "男", "Male")}</option>
+                <option value="Female">{t(lang, "女", "Female")}</option>
               </select>
             </FieldLabel>
-            <FieldLabel label="生日">
+            <FieldLabel label={t(lang, "生日", "Birthday")}>
               <input
                 type="date"
                 className={baseInputClass}
@@ -934,12 +970,12 @@ export function ProfileManagementPanel({ member, growth }) {
                 }
               />
             </FieldLabel>
-            <SubmitButton disabled={isSaving}>保存</SubmitButton>
+            <SubmitButton disabled={isSaving}>{t(lang, "保存", "Save")}</SubmitButton>
           </form>
         </SectionCard>
 
         {isAdult ? (
-          <SectionCard title="身體資料" description="身高較少變動，可以在這裡設定；體重則可快速補一筆最新紀錄。">
+          <SectionCard title={t(lang, "身體資料", "Body Metrics")} description={t(lang, "身高較少變動，可以在這裡設定；體重則可快速補一筆最新紀錄。", "Set height here and quickly add the latest weight record.")}>
             <div className="grid gap-5 lg:grid-cols-2">
               <form
                 className="rounded-[24px] border border-white/70 bg-white/70 p-5"
@@ -961,24 +997,24 @@ export function ProfileManagementPanel({ member, growth }) {
                         await createHealthRecord(member.id, payload);
                       }
                     },
-                    "身高設定已更新"
+                    t(lang, "身高設定已更新", "Height updated")
                   );
                 }}
               >
-                <p className="text-base font-semibold text-ink">身高設定</p>
+                <p className="text-base font-semibold text-ink">{t(lang, "身高設定", "Height Setting")}</p>
                 <div className="mt-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
                   <p>
-                    目前已保存身高：
+                    {t(lang, "目前已保存身高：", "Saved height:")}
                     <span className="ml-2 font-semibold text-ink">
-                      {latestManualHeightRecord?.value ? `${latestManualHeightRecord.value} cm` : "未設定"}
+                      {latestManualHeightRecord?.value ? `${latestManualHeightRecord.value} cm` : t(lang, "未設定", "Not set")}
                     </span>
                   </p>
                   {latestManualHeightRecord?.recordedAt ? (
-                    <p className="mt-1">最後更新：{formatChineseDate(latestManualHeightRecord.recordedAt, true)}</p>
+                    <p className="mt-1">{t(lang, "最後更新：", "Last updated:")}{formatChineseDate(latestManualHeightRecord.recordedAt, true, lang)}</p>
                   ) : null}
                 </div>
                 <div className="mt-4 grid gap-4">
-                  <FieldLabel label="身高（cm）">
+                  <FieldLabel label={t(lang, "身高（cm）", "Height (cm)")}>
                     <input
                       type="number"
                       inputMode="decimal"
@@ -990,7 +1026,7 @@ export function ProfileManagementPanel({ member, growth }) {
                       }
                     />
                   </FieldLabel>
-                  <FieldLabel label="記錄時間">
+                  <FieldLabel label={t(lang, "記錄時間", "Recorded At")}>
                     <input
                       type="datetime-local"
                       className={baseInputClass}
@@ -1003,17 +1039,17 @@ export function ProfileManagementPanel({ member, growth }) {
                       }
                     />
                   </FieldLabel>
-                  <FieldLabel label="備註">
+                  <FieldLabel label={t(lang, "備註", "Notes")}>
                     <input
                       className={baseInputClass}
-                      placeholder="例如：最新量度身高"
+                      placeholder={t(lang, "例如：最新量度身高", "Example: latest height check")}
                       value={quickHeightForm.notes}
                       onChange={(event) =>
                         setQuickHeightForm((current) => ({ ...current, notes: event.target.value }))
                       }
                     />
                   </FieldLabel>
-                  <SubmitButton disabled={isSaving}>保存身高設定</SubmitButton>
+                  <SubmitButton disabled={isSaving}>{t(lang, "保存身高設定", "Save height")}</SubmitButton>
                 </div>
               </form>
 
@@ -1036,13 +1072,13 @@ export function ProfileManagementPanel({ member, growth }) {
                         notes: ""
                       });
                     },
-                    "體重已記錄"
+                    t(lang, "體重已記錄", "Weight saved")
                   );
                 }}
               >
-                <p className="text-base font-semibold text-ink">快速記錄體重</p>
+                <p className="text-base font-semibold text-ink">{t(lang, "快速記錄體重", "Quick Weight Entry")}</p>
                 <div className="mt-4 grid gap-4">
-                  <FieldLabel label="體重（kg）">
+                  <FieldLabel label={t(lang, "體重（kg）", "Weight (kg)")}>
                     <input
                       type="number"
                       inputMode="decimal"
@@ -1054,7 +1090,7 @@ export function ProfileManagementPanel({ member, growth }) {
                       }
                     />
                   </FieldLabel>
-                  <FieldLabel label="記錄時間">
+                  <FieldLabel label={t(lang, "記錄時間", "Recorded At")}>
                     <input
                       type="datetime-local"
                       className={baseInputClass}
@@ -1067,17 +1103,17 @@ export function ProfileManagementPanel({ member, growth }) {
                       }
                     />
                   </FieldLabel>
-                  <FieldLabel label="備註">
+                  <FieldLabel label={t(lang, "備註", "Notes")}>
                     <input
                       className={baseInputClass}
-                      placeholder="例如：早上量度"
+                      placeholder={t(lang, "例如：早上量度", "Example: morning weigh-in")}
                       value={quickWeightForm.notes}
                       onChange={(event) =>
                         setQuickWeightForm((current) => ({ ...current, notes: event.target.value }))
                       }
                     />
                   </FieldLabel>
-                  <SubmitButton disabled={isSaving}>新增體重紀錄</SubmitButton>
+                  <SubmitButton disabled={isSaving}>{t(lang, "新增體重紀錄", "Add weight record")}</SubmitButton>
                 </div>
               </form>
             </div>
@@ -1090,7 +1126,7 @@ export function ProfileManagementPanel({ member, growth }) {
   function renderRecordTab() {
     return (
       <div className="space-y-5">
-        <SectionCard title="新增健康紀錄" description="先新增，再直接在下方依項目快速管理。">
+        <SectionCard title={t(lang, "新增健康紀錄", "Add Health Record")} description={t(lang, "先新增，再直接在下方依項目快速管理。", "Add a record first, then manage it below by category.")}>
           <form
             className="grid gap-4 md:grid-cols-2"
             onSubmit={(event) => {
@@ -1103,11 +1139,11 @@ export function ProfileManagementPanel({ member, growth }) {
                   });
                   resetRecordForm();
                 },
-                "健康紀錄已新增"
+                t(lang, "健康紀錄已新增", "Health record added")
               );
             }}
           >
-            <FieldLabel label="類型">
+            <FieldLabel label={t(lang, "類型", "Type")}>
               <select
                 className={baseInputClass}
                 value={newRecordForm.category}
@@ -1124,7 +1160,7 @@ export function ProfileManagementPanel({ member, growth }) {
               >
                 {HEALTH_RECORD_PRESETS.map((preset) => (
                   <option key={preset.value} value={preset.value}>
-                    {preset.label}
+                    {translateHealthPresetLabel(lang, preset.value)}
                   </option>
                 ))}
               </select>
@@ -1182,6 +1218,7 @@ export function ProfileManagementPanel({ member, growth }) {
           items={manualHealthRecords}
           onRunAction={runAction}
           isSaving={isSaving}
+          lang={lang}
         />
       </div>
     );
@@ -1245,7 +1282,7 @@ export function ProfileManagementPanel({ member, growth }) {
           items={growth?.measurements || []}
           getKey={(item) => item.id}
           getTitle={(item) => `${item.heightCm} cm / ${item.weightKg} kg`}
-          getSubtitle={(item) => formatChineseDate(item.measuredAt)}
+          getSubtitle={(item) => formatChineseDate(item.measuredAt, false, lang)}
           initialValues={(item) => ({
             heightCm: String(item.heightCm ?? ""),
             weightKg: String(item.weightKg ?? ""),
@@ -1301,7 +1338,7 @@ export function ProfileManagementPanel({ member, growth }) {
   function renderExerciseTab() {
     return (
       <div className="space-y-5">
-        <SectionCard title="新增運動紀錄" description="揀運動類型後，系統會按你的最近體重自動估算卡路里。">
+        <SectionCard title={t(lang, "新增運動紀錄", "Add Workout")} description={t(lang, "揀運動類型後，系統會按你的最近體重自動估算卡路里。", "Calories are auto-estimated from the selected workout type and your latest weight.")}>
           <form
             className="grid gap-4 md:grid-cols-2"
             autoComplete="off"
@@ -1315,11 +1352,11 @@ export function ProfileManagementPanel({ member, growth }) {
                   });
                   resetExerciseForm();
                 },
-                "運動紀錄已新增"
+                t(lang, "運動紀錄已新增", "Workout added")
               );
             }}
           >
-            <FieldLabel label="運動類型">
+            <FieldLabel label={t(lang, "運動類型", "Workout Type")}>
               <select
                 className={baseInputClass}
                 value={newExerciseForm.workoutType}
@@ -1335,21 +1372,21 @@ export function ProfileManagementPanel({ member, growth }) {
                   }))
                 }
               >
-                <option value="">請選擇運動類型</option>
+                <option value="">{t(lang, "請選擇運動類型", "Select a workout type")}</option>
                 {WORKOUT_TYPE_PRESETS.map((preset) => (
                   <option key={preset.value} value={preset.value}>
-                    {preset.label}
+                    {translateWorkoutType(lang, preset.value)}
                   </option>
                 ))}
               </select>
             </FieldLabel>
-            <FieldLabel label="時長（分鐘）">
+            <FieldLabel label={t(lang, "時長（分鐘）", "Duration (min)")}>
               <input
                 type="number"
                 inputMode="numeric"
                 min="0"
                 className={baseInputClass}
-                placeholder="例如：45"
+                placeholder={t(lang, "例如：45", "Example: 45")}
                 value={newExerciseForm.durationMinutes}
                 onChange={(event) =>
                   setNewExerciseForm((current) => ({
@@ -1364,7 +1401,7 @@ export function ProfileManagementPanel({ member, growth }) {
                 }
               />
             </FieldLabel>
-            <FieldLabel label="運動時間">
+            <FieldLabel label={t(lang, "運動時間", "Workout Time")}>
               <input
                 type="datetime-local"
                 className={baseInputClass}
@@ -1375,10 +1412,10 @@ export function ProfileManagementPanel({ member, growth }) {
               />
             </FieldLabel>
             <div className="md:col-span-2">
-              <FieldLabel label="備註">
+              <FieldLabel label={t(lang, "備註", "Notes")}>
                 <textarea
                   className={`${baseInputClass} min-h-24 resize-y`}
-                  placeholder="例如：跑步機 5 公里，感覺良好"
+                  placeholder={t(lang, "例如：跑步機 5 公里，感覺良好", "Example: 5 km treadmill run, felt good")}
                   value={newExerciseForm.notes}
                   onChange={(event) =>
                     setNewExerciseForm((current) => ({ ...current, notes: event.target.value }))
@@ -1388,20 +1425,24 @@ export function ProfileManagementPanel({ member, growth }) {
             </div>
             <div className="md:col-span-2">
               <p className="mb-3 text-xs text-slate-500">
-                卡路里會按最近體重 {latestWeightValue || 70} kg 自動估算並儲存；如果未有體重，會先用 70 kg。
+                {t(
+                  lang,
+                  `卡路里會按最近體重 ${latestWeightValue || 70} kg 自動估算並儲存；如果未有體重，會先用 70 kg。`,
+                  `Calories are auto-estimated using your latest weight of ${latestWeightValue || 70} kg. If no weight is available, 70 kg is used.`
+                )}
               </p>
-              <SubmitButton disabled={isSaving}>新增運動紀錄</SubmitButton>
+              <SubmitButton disabled={isSaving}>{t(lang, "新增運動紀錄", "Add workout")}</SubmitButton>
             </div>
           </form>
         </SectionCard>
 
         <EditableList
-          title="快速修改運動紀錄"
-          description="只會顯示人手新增的運動紀錄；Apple Health 匯入的資料不會在這裡修改。"
+          title={t(lang, "快速修改運動紀錄", "Quick Edit Workouts")}
+          description={t(lang, "只會顯示人手新增的運動紀錄；Apple Health 匯入的資料不會在這裡修改。", "Only manual workout entries appear here. Apple Health imports cannot be edited here.")}
           items={manualExerciseLogs}
           getKey={(item) => item.id}
           getTitle={(item) => item.workoutType}
-          getSubtitle={(item) => formatChineseDate(item.performedAt, true)}
+          getSubtitle={(item) => formatChineseDate(item.performedAt, true, lang)}
           initialValues={(item) => ({
             workoutType: item.workoutType,
             durationMinutes: String(item.durationMinutes ?? ""),
@@ -1434,7 +1475,7 @@ export function ProfileManagementPanel({ member, growth }) {
                   ) : null}
                   {WORKOUT_TYPE_PRESETS.map((preset) => (
                     <option key={preset.value} value={preset.value}>
-                      {preset.label}
+                      {translateWorkoutType(lang, preset.value)}
                     </option>
                   ))}
                 </select>
@@ -1489,15 +1530,15 @@ export function ProfileManagementPanel({ member, growth }) {
                   ...draft,
                   performedAt: new Date(draft.performedAt).toISOString()
                 }),
-              "運動紀錄已更新"
+              t(lang, "運動紀錄已更新", "Workout updated")
             )
           }
           onDelete={(item) =>
-            runAction(() => deleteExerciseLog(member.id, item.id), "運動紀錄已刪除")
+            runAction(() => deleteExerciseLog(member.id, item.id), t(lang, "運動紀錄已刪除", "Workout deleted"))
           }
           isSaving={isSaving}
-          emptyText="暫時沒有可修改的人手運動紀錄。"
-          deleteLabel="運動紀錄"
+          emptyText={t(lang, "暫時沒有可修改的人手運動紀錄。", "No editable manual workout records yet.")}
+          deleteLabel={t(lang, "運動紀錄", "Workout")}
         />
       </div>
     );
@@ -1509,43 +1550,43 @@ export function ProfileManagementPanel({ member, growth }) {
     return (
       <div className="space-y-5">
         <SectionCard
-          title="Apple Health 自動匯入"
-          description="建議先看預覽，再正式匯入。每一步都會顯示明確狀態。"
+          title={t(lang, "Apple Health 自動匯入", "Apple Health Auto Import")}
+          description={t(lang, "建議先看預覽，再正式匯入。每一步都會顯示明確狀態。", "Preview first, then import. Each step shows a clear status.")}
         >
           <div className="grid gap-4 md:grid-cols-2">
             <div className="rounded-2xl bg-slate-50 p-5">
-              <p className="text-base font-semibold text-ink">第 1 步：先做預覽</p>
+              <p className="text-base font-semibold text-ink">{t(lang, "第 1 步：先做預覽", "Step 1: Preview first")}</p>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                先掃描 iCloud Drive 最新 zip，看看會新增多少資料。
+                {t(lang, "先掃描 iCloud Drive 最新 zip，看看會新增多少資料。", "Scan the latest iCloud Drive zip first to see what would be added.")}
               </p>
               <div className="mt-4">
                 <ActionButton disabled={isAppleHealthBusy} onClick={handleAppleHealthPreviewLatest}>
                   {isAppleHealthBusy && appleHealthJob?.kind === "preview-latest"
-                    ? "正在分析最新 zip..."
-                    : "先做預覽"}
+                    ? t(lang, "正在分析最新 zip...", "Previewing latest zip...")
+                    : t(lang, "先做預覽", "Preview")}
                 </ActionButton>
               </div>
             </div>
             <div className="rounded-2xl bg-slate-50 p-5">
-              <p className="text-base font-semibold text-ink">第 2 步：正式匯入</p>
+              <p className="text-base font-semibold text-ink">{t(lang, "第 2 步：正式匯入", "Step 2: Import")}</p>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                確認預覽沒問題之後，再把最近 30 日資料寫入資料庫。
+                {t(lang, "確認預覽沒問題之後，再把最近 30 日資料寫入資料庫。", "After reviewing the preview, write the last 30 days of data into the database.")}
               </p>
               <div className="mt-4">
                 <ActionButton disabled={isAppleHealthBusy} onClick={handleAppleHealthImportLatest}>
                   {isAppleHealthBusy && appleHealthJob?.kind === "import-latest"
-                    ? "正在匯入最新 zip..."
-                    : "開始自動匯入"}
+                    ? t(lang, "正在匯入最新 zip...", "Importing latest zip...")
+                    : t(lang, "開始自動匯入", "Start auto import")}
                 </ActionButton>
               </div>
             </div>
           </div>
           <p className="mt-4 text-sm leading-6 text-slate-500">
-            系統會自動讀取
+            {t(lang, "系統會自動讀取", "The system will automatically read")}
             <span className="mx-1 rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
               iCloud Drive/Apple Health/
             </span>
-            裡最新的 zip，解壓後自動找到 <code>export.xml</code>，並只同步最近 30 日資料。
+            {t(lang, "裡最新的 zip，解壓後自動找到", "for the latest zip, unpack it, find")} <code>export.xml</code>{t(lang, "，並只同步最近 30 日資料。", ", and sync only the most recent 30 days of data.")}
           </p>
         </SectionCard>
 

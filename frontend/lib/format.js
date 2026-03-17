@@ -1,7 +1,9 @@
-export function formatChineseDate(dateString, withTime = false) {
-  return new Date(dateString).toLocaleString("zh-HK", {
+import { getLocale, isEnglish } from "./i18n";
+
+export function formatChineseDate(dateString, withTime = false, lang = "zh") {
+  return new Date(dateString).toLocaleString(getLocale(lang), {
     year: "numeric",
-    month: "long",
+    month: isEnglish(lang) ? "short" : "long",
     day: "numeric",
     ...(withTime
       ? {
@@ -12,47 +14,70 @@ export function formatChineseDate(dateString, withTime = false) {
   });
 }
 
-export function formatCompactDate(dateString, withYear = false) {
-  return new Date(dateString).toLocaleDateString("zh-HK", {
+export function formatCompactDate(dateString, withYear = false, lang = "zh") {
+  return new Date(dateString).toLocaleDateString(getLocale(lang), {
     ...(withYear ? { year: "numeric" } : {}),
     month: "short",
     day: "numeric"
   });
 }
 
-export function formatCategoryLabel(category) {
+export function formatCategoryLabel(category, lang = "zh") {
   const labels = {
-    weight: "體重",
-    height: "身高",
-    sleep: "睡眠",
-    steps: "步數",
-    heart_rate: "心率",
-    resting_heart_rate: "靜止心率",
-    active_energy_burned: "活動熱量"
+    zh: {
+      weight: "體重",
+      height: "身高",
+      sleep: "睡眠",
+      steps: "步數",
+      heart_rate: "心率",
+      resting_heart_rate: "靜止心率",
+      active_energy_burned: "活動熱量"
+    },
+    en: {
+      weight: "Weight",
+      height: "Height",
+      sleep: "Sleep",
+      steps: "Steps",
+      heart_rate: "Heart Rate",
+      resting_heart_rate: "Resting Heart Rate",
+      active_energy_burned: "Active Energy"
+    }
   };
 
-  return labels[category] || category.replaceAll("_", " ");
+  return labels[isEnglish(lang) ? "en" : "zh"][category] || category.replaceAll("_", " ");
 }
 
-export function formatNumber(value, maximumFractionDigits = 1) {
-  return new Intl.NumberFormat("zh-HK", {
+export function formatNumber(value, maximumFractionDigits = 1, lang = "zh") {
+  return new Intl.NumberFormat(getLocale(lang), {
     maximumFractionDigits
   }).format(Number(value));
 }
 
-export function formatUnitLabel(unit) {
+export function formatUnitLabel(unit, lang = "zh") {
   const labels = {
-    count: "步",
-    steps: "步",
-    hours: "小時",
-    kg: "kg",
-    cm: "cm",
-    bpm: "次/分鐘",
-    "count/min": "次/分鐘",
-    kcal: "kcal"
+    zh: {
+      count: "步",
+      steps: "步",
+      hours: "小時",
+      kg: "kg",
+      cm: "cm",
+      bpm: "次/分鐘",
+      "count/min": "次/分鐘",
+      kcal: "kcal"
+    },
+    en: {
+      count: "steps",
+      steps: "steps",
+      hours: "hours",
+      kg: "kg",
+      cm: "cm",
+      bpm: "bpm",
+      "count/min": "bpm",
+      kcal: "kcal"
+    }
   };
 
-  return labels[unit] || unit || "";
+  return labels[isEnglish(lang) ? "en" : "zh"][unit] || unit || "";
 }
 
 export function formatValueWithUnit(value, unit, options = {}) {
@@ -60,14 +85,15 @@ export function formatValueWithUnit(value, unit, options = {}) {
     return options.emptyLabel || "未有資料";
   }
 
+  const lang = options.lang || "zh";
   const number = Number(value);
   const fractionDigits =
     options.maximumFractionDigits ??
     (Number.isInteger(number) || unit === "count" || unit === "steps" || unit === "bpm" || unit === "count/min"
       ? 0
       : 1);
-  const formattedNumber = formatNumber(number, fractionDigits);
-  const formattedUnit = formatUnitLabel(unit);
+  const formattedNumber = formatNumber(number, fractionDigits, lang);
+  const formattedUnit = formatUnitLabel(unit, lang);
 
   return `${formattedNumber}${formattedUnit ? ` ${formattedUnit}` : ""}`;
 }

@@ -1,12 +1,14 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { MetricHistoryChart } from "../components/metric-history-chart";
 import { MiniMetricChart } from "../components/mini-metric-chart";
 import { formatChineseDate, formatMetric, formatValueWithUnit } from "../lib/format";
 import { getFamilyMember, getFamilyMembers, getGrowthTracking } from "../lib/api";
+import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../lib/i18n";
 
-function buildTrendInsight(items, label) {
+function buildTrendInsight(items, label, lang) {
   if (!items || items.length < 2) {
-    return `${label}正在累積更多資料。`;
+    return t(lang, `${label}正在累積更多資料。`, `More ${label.toLowerCase()} data is still being collected.`);
   }
 
   const firstValue = Number(items[0].value);
@@ -14,10 +16,14 @@ function buildTrendInsight(items, label) {
   const delta = Math.round((lastValue - firstValue) * 10) / 10;
 
   if (delta === 0) {
-    return `${label}整體保持平穩。`;
+    return t(lang, `${label}整體保持平穩。`, `${label} is holding steady overall.`);
   }
 
-  return `${label}${delta > 0 ? "上升" : "下降"} ${Math.abs(delta)}。`;
+  return t(
+    lang,
+    `${label}${delta > 0 ? "上升" : "下降"} ${Math.abs(delta)}。`,
+    `${label} ${delta > 0 ? "increased" : "decreased"} by ${Math.abs(delta)}.`
+  );
 }
 
 function formatDeltaLabel(trend) {
@@ -33,6 +39,8 @@ function formatDeltaLabel(trend) {
 }
 
 export default async function HomePage() {
+  const cookieStore = await cookies();
+  const lang = normalizeLanguage(cookieStore.get(LANGUAGE_COOKIE)?.value);
   let members = [];
   let alex = null;
   let amelie = null;
@@ -108,19 +116,21 @@ export default async function HomePage() {
             <div className="rounded-[28px] bg-white/80 p-5">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Family Members</p>
               <p className="mt-2 text-3xl font-semibold text-ink">{members.length}</p>
-              <p className="mt-2 text-sm text-slate-500">每位成員用摘要卡而不是長列表查看健康狀態。</p>
+              <p className="mt-2 text-sm text-slate-500">
+                {t(lang, "每位成員用摘要卡而不是長列表查看健康狀態。", "Use concise summary cards instead of long raw-data lists.")}
+              </p>
             </div>
             <div className="rounded-[28px] bg-white/80 p-5">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Ryan Latest Growth</p>
               <p className="mt-2 text-3xl font-semibold text-ink">
                 {growth?.summary?.latestMeasurement
                   ? `${growth.summary.latestMeasurement.heightCm} cm`
-                  : "未有資料"}
+                  : t(lang, "未有資料", "No data yet")}
               </p>
               <p className="mt-2 text-sm text-slate-500">
                 {growth?.summary?.latestMeasurement
-                  ? `體重 ${growth.summary.latestMeasurement.weightKg} kg`
-                  : "等待更多成長紀錄"}
+                  ? t(lang, `體重 ${growth.summary.latestMeasurement.weightKg} kg`, `Weight ${growth.summary.latestMeasurement.weightKg} kg`)
+                  : t(lang, "等待更多成長紀錄", "Waiting for more growth records")}
               </p>
             </div>
           </div>
@@ -131,26 +141,26 @@ export default async function HomePage() {
         <div className="glass-panel rounded-[28px] p-6 shadow-glass">
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Alex Latest Weight</p>
           <p className="mt-2 text-3xl font-semibold text-ink">
-            {formatMetric(alexDashboard?.cards?.latestWeight || alex?.latestMetrics?.weight)}
+            {formatMetric(alexDashboard?.cards?.latestWeight || alex?.latestMetrics?.weight, { lang, emptyLabel: t(lang, "未有資料", "No data yet") })}
           </p>
-          <p className="mt-2 text-sm text-slate-500">{buildTrendInsight(alexWeightTrend, "體重")}</p>
+          <p className="mt-2 text-sm text-slate-500">{buildTrendInsight(alexWeightTrend, t(lang, "體重", "Weight"), lang)}</p>
         </div>
         <div className="glass-panel rounded-[28px] p-6 shadow-glass">
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Amelie Latest Weight</p>
           <p className="mt-2 text-3xl font-semibold text-ink">
-            {formatMetric(amelieDashboard?.cards?.latestWeight || amelie?.latestMetrics?.weight)}
+            {formatMetric(amelieDashboard?.cards?.latestWeight || amelie?.latestMetrics?.weight, { lang, emptyLabel: t(lang, "未有資料", "No data yet") })}
           </p>
-          <p className="mt-2 text-sm text-slate-500">{buildTrendInsight(amelieWeightTrend, "體重")}</p>
+          <p className="mt-2 text-sm text-slate-500">{buildTrendInsight(amelieWeightTrend, t(lang, "體重", "Weight"), lang)}</p>
         </div>
         <div className="glass-panel rounded-[28px] p-6 shadow-glass">
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Alex Today</p>
-          <p className="mt-2 text-2xl font-semibold text-ink">{formatMetric(alexSecondaryMetric)}</p>
-          <p className="mt-2 text-sm text-slate-500">常見用戶最關注步數、靜止心率和睡眠變化。</p>
+          <p className="mt-2 text-2xl font-semibold text-ink">{formatMetric(alexSecondaryMetric, { lang, emptyLabel: t(lang, "未有資料", "No data yet") })}</p>
+          <p className="mt-2 text-sm text-slate-500">{t(lang, "常見用戶最關注步數、靜止心率和睡眠變化。", "Most people care first about steps, resting heart rate, and sleep trends.")}</p>
         </div>
         <div className="glass-panel rounded-[28px] p-6 shadow-glass">
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Amelie Today</p>
-          <p className="mt-2 text-2xl font-semibold text-ink">{formatMetric(amelieSecondaryMetric)}</p>
-          <p className="mt-2 text-sm text-slate-500">以睡眠、步數或心率去看整體狀態會比 raw data 更直觀。</p>
+          <p className="mt-2 text-2xl font-semibold text-ink">{formatMetric(amelieSecondaryMetric, { lang, emptyLabel: t(lang, "未有資料", "No data yet") })}</p>
+          <p className="mt-2 text-sm text-slate-500">{t(lang, "以睡眠、步數或心率去看整體狀態會比 raw data 更直觀。", "Sleep, steps, and heart rate are usually more useful than raw tables.")}</p>
         </div>
       </div>
 
@@ -160,12 +170,14 @@ export default async function HomePage() {
           color="#0071e3"
           label="Alex Weight Trend"
           unit="kg"
+          lang={lang}
         />
         <MetricHistoryChart
           items={amelieWeightTrend}
           color="#34a853"
           label="Amelie Weight Trend"
           unit="kg"
+          lang={lang}
         />
       </div>
 
@@ -178,14 +190,15 @@ export default async function HomePage() {
             </div>
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <MiniMetricChart items={alexStepsTrend} color="#34a853" label="Steps" unit="steps" compact />
-            <MiniMetricChart items={alexSleepTrend} color="#5c6ac4" label="Sleep" unit="hours" compact />
+            <MiniMetricChart items={alexStepsTrend} color="#34a853" label="Steps" unit="steps" compact lang={lang} />
+            <MiniMetricChart items={alexSleepTrend} color="#5c6ac4" label="Sleep" unit="hours" compact lang={lang} />
             <MiniMetricChart
               items={alexRestingHeartRateTrend}
               color="#ff6b57"
               label="Resting Heart Rate"
               unit="bpm"
               compact
+              lang={lang}
             />
             <MiniMetricChart
               items={alex?.metricTrends?.heart_rate || []}
@@ -193,8 +206,9 @@ export default async function HomePage() {
               label="Heart Rate"
               unit="bpm"
               compact
+              lang={lang}
             />
-            <MiniMetricChart items={alexWeightTrend} color="#0071e3" label="Weight" unit="kg" compact />
+            <MiniMetricChart items={alexWeightTrend} color="#0071e3" label="Weight" unit="kg" compact lang={lang} />
           </div>
         </div>
 
@@ -206,14 +220,15 @@ export default async function HomePage() {
             </div>
           </div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <MiniMetricChart items={amelieStepsTrend} color="#34a853" label="Steps" unit="steps" compact />
-            <MiniMetricChart items={amelieSleepTrend} color="#5c6ac4" label="Sleep" unit="hours" compact />
+            <MiniMetricChart items={amelieStepsTrend} color="#34a853" label="Steps" unit="steps" compact lang={lang} />
+            <MiniMetricChart items={amelieSleepTrend} color="#5c6ac4" label="Sleep" unit="hours" compact lang={lang} />
             <MiniMetricChart
               items={amelieRestingHeartRateTrend}
               color="#ff6b57"
               label="Resting Heart Rate"
               unit="bpm"
               compact
+              lang={lang}
             />
             <MiniMetricChart
               items={amelie?.metricTrends?.heart_rate || []}
@@ -221,8 +236,9 @@ export default async function HomePage() {
               label="Heart Rate"
               unit="bpm"
               compact
+              lang={lang}
             />
-            <MiniMetricChart items={amelieWeightTrend} color="#0071e3" label="Weight" unit="kg" compact />
+            <MiniMetricChart items={amelieWeightTrend} color="#0071e3" label="Weight" unit="kg" compact lang={lang} />
           </div>
         </div>
       </div>
@@ -233,12 +249,14 @@ export default async function HomePage() {
           color="#34a853"
           label="Alex Daily Steps"
           unit="steps"
+          lang={lang}
         />
         <MetricHistoryChart
           items={amelieSleepTrend}
           color="#5c6ac4"
           label="Amelie Sleep Duration"
           unit="hours"
+          lang={lang}
         />
       </div>
 
@@ -272,8 +290,8 @@ export default async function HomePage() {
           <div className="mt-5 space-y-3">
             {[...(alexDashboard?.insights || []).slice(0, 2), ...(amelieDashboard?.insights || []).slice(0, 2)].map((insight) => (
               <div key={`${insight.title}-${insight.description}`} className="rounded-[22px] bg-white/80 p-4">
-                <p className="text-sm font-semibold text-ink">{insight.title}</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{insight.description}</p>
+                <p className="text-sm font-semibold text-ink">{translateDynamicText(lang, insight.title)}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{translateDynamicText(lang, insight.description)}</p>
               </div>
             ))}
           </div>
@@ -288,18 +306,18 @@ export default async function HomePage() {
               <div key={member.id} className="rounded-[24px] bg-white/80 p-5">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
                   {member.familyRole === "Father"
-                    ? "爸爸"
+                    ? t(lang, "爸爸", "Father")
                     : member.familyRole === "Mother"
-                      ? "媽媽"
-                      : "孩子"}
+                      ? t(lang, "媽媽", "Mother")
+                      : t(lang, "孩子", "Child")}
                 </p>
                 <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">{member.name}</h2>
-                <p className="mt-2 text-sm text-slate-500">{member.age} 歲</p>
-                <p className="mt-1 text-sm text-slate-500">{formatChineseDate(member.dateOfBirth)}</p>
+                <p className="mt-2 text-sm text-slate-500">{member.age} {t(lang, "歲", "yrs")}</p>
+                <p className="mt-1 text-sm text-slate-500">{formatChineseDate(member.dateOfBirth, false, lang)}</p>
                 <p className="mt-4 text-sm text-slate-700">
-                  健康紀錄 {member.totalHealthRecordCount || 0} 筆
+                  {t(lang, "健康紀錄", "Health Records")} {member.totalHealthRecordCount || 0}
                 </p>
-                <p className="mt-1 text-sm text-slate-500">運動紀錄 {member.totalExerciseLogCount || 0} 筆</p>
+                <p className="mt-1 text-sm text-slate-500">{t(lang, "運動紀錄", "Workout Records")} {member.totalExerciseLogCount || 0}</p>
               </div>
             ))}
           </div>
@@ -310,19 +328,24 @@ export default async function HomePage() {
           {growth?.summary ? (
             <>
               <h2 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-ink">
-                相比第一筆紀錄，已長高 +{growth.summary.totalHeightGainCm} cm
+                {t(lang, `相比第一筆紀錄，已長高 +${growth.summary.totalHeightGainCm} cm`, `Height change since first record: +${growth.summary.totalHeightGainCm} cm`)}
               </h2>
               <p className="mt-3 text-sm leading-6 text-slate-600">
-                最新測量為 {growth.summary.latestMeasurement.heightCm} cm、
-                {growth.summary.latestMeasurement.weightKg} kg。
+                {t(
+                  lang,
+                  `最新測量為 ${growth.summary.latestMeasurement.heightCm} cm、${growth.summary.latestMeasurement.weightKg} kg。`,
+                  `Latest measurement: ${growth.summary.latestMeasurement.heightCm} cm and ${growth.summary.latestMeasurement.weightKg} kg.`
+                )}
               </p>
               <div className="mt-6 rounded-[24px] bg-white/80 p-5">
-                <p className="text-sm font-semibold text-ink">{growth.insights[0]?.title}</p>
-                <p className="mt-2 text-sm leading-6 text-slate-500">{growth.insights[0]?.description}</p>
+                <p className="text-sm font-semibold text-ink">{translateDynamicText(lang, growth.insights[0]?.title)}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  {translateDynamicText(lang, growth.insights[0]?.description || growth.insights[0]?.detail)}
+                </p>
               </div>
             </>
           ) : (
-            <p className="mt-4 text-sm text-slate-500">等待 Ryan 成長數據載入。</p>
+            <p className="mt-4 text-sm text-slate-500">{t(lang, "等待 Ryan 成長數據載入。", "Waiting for Ryan's growth data.")}</p>
           )}
         </div>
       </div>

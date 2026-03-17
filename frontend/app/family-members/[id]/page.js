@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { ExerciseLogList } from "../../../components/exercise-log-list";
 import { GrowthChart } from "../../../components/growth-chart";
@@ -10,6 +11,7 @@ import { ProfileManagementPanel } from "../../../components/profile-management-p
 import { calculateBmi } from "../../../lib/bmi";
 import { formatChineseDate, formatMetric, formatValueWithUnit } from "../../../lib/format";
 import { getFamilyMember, getGrowthTracking } from "../../../lib/api";
+import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../../../lib/i18n";
 
 function pickSecondaryTrend(metricTrends = {}) {
   const candidates = [
@@ -30,16 +32,16 @@ function pickSecondaryTrend(metricTrends = {}) {
     .find((entry) => entry.items.length);
 }
 
-function formatDelta(trend) {
+function formatDelta(trend, lang) {
   if (!trend || trend.delta === null || trend.delta === undefined) {
-    return "未有足夠資料";
+    return t(lang, "未有足夠資料", "Not enough data");
   }
 
   if (trend.delta === 0) {
-    return "與 30 天基準相若";
+    return t(lang, "與 30 天基準相若", "Similar to the 30-day baseline");
   }
 
-  return `${trend.delta > 0 ? "+" : ""}${formatValueWithUnit(trend.delta, trend.unit)}`;
+  return `${trend.delta > 0 ? "+" : ""}${formatValueWithUnit(trend.delta, trend.unit, { lang })}`;
 }
 
 export async function generateMetadata({ params }) {
@@ -59,6 +61,8 @@ export async function generateMetadata({ params }) {
 
 export default async function FamilyMemberDetailPage({ params }) {
   const resolvedParams = await params;
+  const cookieStore = await cookies();
+  const lang = normalizeLanguage(cookieStore.get(LANGUAGE_COOKIE)?.value);
   let member;
   let growth = null;
   let bmi = null;
@@ -96,7 +100,7 @@ export default async function FamilyMemberDetailPage({ params }) {
   return (
     <section className="space-y-8">
       <Link href="/family-members" className="inline-flex text-sm font-semibold text-blue">
-        ← 返回家庭成員列表
+        ← {t(lang, "返回家庭成員列表", "Back to family members")}
       </Link>
 
       <div className="glass-panel rounded-[36px] p-8 shadow-panel">
@@ -104,10 +108,10 @@ export default async function FamilyMemberDetailPage({ params }) {
           <div>
             <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
               {member.familyRole === "Father"
-                ? "爸爸"
+                ? t(lang, "爸爸", "Father")
                 : member.familyRole === "Mother"
-                  ? "媽媽"
-                  : "孩子"}
+                  ? t(lang, "媽媽", "Mother")
+                  : t(lang, "孩子", "Child")}
             </p>
             <h1 className="mt-3 text-5xl font-semibold tracking-[-0.05em] text-ink">
               {member.name}
@@ -115,18 +119,18 @@ export default async function FamilyMemberDetailPage({ params }) {
           </div>
           <div className="flex flex-wrap gap-3">
             <div className="rounded-2xl bg-white/80 px-4 py-3 text-sm text-ink">
-              <span className="block text-xs uppercase tracking-[0.15em] text-slate-500">年齡</span>
-              <span className="mt-1 block font-semibold">{member.age} 歲</span>
+              <span className="block text-xs uppercase tracking-[0.15em] text-slate-500">{t(lang, "年齡", "Age")}</span>
+              <span className="mt-1 block font-semibold">{member.age} {t(lang, "歲", "yrs")}</span>
             </div>
             <div className="rounded-2xl bg-white/80 px-4 py-3 text-sm text-ink">
-              <span className="block text-xs uppercase tracking-[0.15em] text-slate-500">性別</span>
+              <span className="block text-xs uppercase tracking-[0.15em] text-slate-500">{t(lang, "性別", "Gender")}</span>
               <span className="mt-1 block font-semibold">
-                {member.gender === "Male" ? "男" : member.gender === "Female" ? "女" : member.gender}
+                {member.gender === "Male" ? t(lang, "男", "Male") : member.gender === "Female" ? t(lang, "女", "Female") : member.gender}
               </span>
             </div>
             <div className="rounded-2xl bg-white/80 px-4 py-3 text-sm text-ink">
-              <span className="block text-xs uppercase tracking-[0.15em] text-slate-500">生日</span>
-              <span className="mt-1 block font-semibold">{formatChineseDate(member.dateOfBirth)}</span>
+              <span className="block text-xs uppercase tracking-[0.15em] text-slate-500">{t(lang, "生日", "Birthday")}</span>
+              <span className="mt-1 block font-semibold">{formatChineseDate(member.dateOfBirth, false, lang)}</span>
             </div>
             {bmi ? (
               <div className="rounded-2xl bg-white/80 px-4 py-3 text-sm text-ink">
@@ -146,30 +150,32 @@ export default async function FamilyMemberDetailPage({ params }) {
               Growth Summary and Charts
             </h2>
           </div>
-          <GrowthInsights growth={growth} />
+          <GrowthInsights growth={growth} lang={lang} />
           {hasGrowthMeasurements ? (
             <div className="grid gap-5 lg:grid-cols-2">
               <GrowthChart
                 measurements={growth.measurements}
                 metric="heightCm"
                 color="#0071e3"
-                label="Height Trend"
+                label={t(lang, "身高趨勢", "Height Trend")}
                 unit="cm"
+                lang={lang}
               />
               <GrowthChart
                 measurements={growth.measurements}
                 metric="weightKg"
                 color="#34a853"
-                label="Weight Trend"
+                label={t(lang, "體重趨勢", "Weight Trend")}
                 unit="kg"
+                lang={lang}
               />
             </div>
           ) : (
             <div className="glass-panel rounded-[28px] p-6 shadow-glass">
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Growth Charts</p>
-              <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">No chart data yet</h3>
+              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{t(lang, "成長圖表", "Growth Charts")}</p>
+              <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">{t(lang, "暫時未有圖表資料", "No chart data yet")}</h3>
               <p className="mt-4 text-sm leading-6 text-slate-500">
-                Ryan&apos;s chart will appear after at least one usable height or weight measurement is available.
+                {t(lang, "Ryan 的身高或體重有可用測量後，這裡就會顯示圖表。", "Ryan's chart will appear once at least one usable height or weight measurement is available.")}
               </p>
             </div>
           )}
@@ -198,7 +204,8 @@ export default async function FamilyMemberDetailPage({ params }) {
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Weight</p>
               <p className="mt-2 text-3xl font-semibold text-ink">
                 {formatMetric(dashboard?.cards?.latestWeight || member.latestMetrics?.weight, {
-                  emptyLabel: "未填寫"
+                  emptyLabel: t(lang, "未填寫", "Not set"),
+                  lang
                 })}
               </p>
             </div>
@@ -206,7 +213,8 @@ export default async function FamilyMemberDetailPage({ params }) {
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Steps</p>
               <p className="mt-2 text-3xl font-semibold text-ink">
                 {formatMetric(dashboard?.cards?.latestSteps || member.latestMetrics?.steps, {
-                  emptyLabel: "未填寫"
+                  emptyLabel: t(lang, "未填寫", "Not set"),
+                  lang
                 })}
               </p>
             </div>
@@ -225,8 +233,8 @@ export default async function FamilyMemberDetailPage({ params }) {
                         : "glass-panel shadow-glass"
                   }`}
                 >
-                  <p className="text-sm font-semibold text-ink">{insight.title}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">{insight.description}</p>
+                  <p className="text-sm font-semibold text-ink">{translateDynamicText(lang, insight.title)}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">{translateDynamicText(lang, insight.description)}</p>
                 </div>
               ))}
             </div>
@@ -239,6 +247,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                 color={secondaryTrend.color}
                 label={secondaryTrend.label}
                 unit={secondaryTrend.unit}
+                lang={lang}
               />
             </div>
           ) : null}
@@ -249,12 +258,14 @@ export default async function FamilyMemberDetailPage({ params }) {
               color="#34a853"
               label="Daily Steps"
               unit="steps"
+              lang={lang}
             />
             <MetricHistoryChart
               items={sleepHistory}
               color="#5c6ac4"
               label="Daily Sleep"
               unit="hours"
+              lang={lang}
             />
           </div>
 
@@ -264,19 +275,20 @@ export default async function FamilyMemberDetailPage({ params }) {
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-500">More Charts</p>
                 <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">Apple Health Mini Charts</h3>
               </div>
-              <p className="text-sm text-slate-500">看更多日常變化</p>
+              <p className="text-sm text-slate-500">{t(lang, "看更多日常變化", "See more day-to-day changes")}</p>
             </div>
             <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <MiniMetricChart items={stepsHistory} color="#34a853" label="Steps" unit="steps" compact />
-              <MiniMetricChart items={sleepHistory} color="#5c6ac4" label="Sleep" unit="hours" compact />
+              <MiniMetricChart items={stepsHistory} color="#34a853" label="Steps" unit="steps" compact lang={lang} />
+              <MiniMetricChart items={sleepHistory} color="#5c6ac4" label="Sleep" unit="hours" compact lang={lang} />
               <MiniMetricChart
                 items={restingHeartRateHistory}
                 color="#ff6b57"
                 label="Resting Heart Rate"
                 unit="bpm"
                 compact
+                lang={lang}
               />
-              <MiniMetricChart items={heartRateHistory} color="#ff8a65" label="Heart Rate" unit="bpm" compact />
+              <MiniMetricChart items={heartRateHistory} color="#ff8a65" label="Heart Rate" unit="bpm" compact lang={lang} />
             </div>
           </div>
 
@@ -289,7 +301,8 @@ export default async function FamilyMemberDetailPage({ params }) {
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Height</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(member.latestMetrics?.height, {
-                        emptyLabel: "未填寫"
+                        emptyLabel: t(lang, "未填寫", "Not set"),
+                        lang
                       })}
                     </p>
                   </div>
@@ -299,7 +312,8 @@ export default async function FamilyMemberDetailPage({ params }) {
                       {formatMetric(
                         dashboard?.cards?.latestRestingHeartRate || member.latestMetrics?.resting_heart_rate,
                         {
-                          emptyLabel: "未填寫"
+                          emptyLabel: t(lang, "未填寫", "Not set"),
+                          lang
                         }
                       )}
                     </p>
@@ -308,7 +322,8 @@ export default async function FamilyMemberDetailPage({ params }) {
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Sleep</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(dashboard?.cards?.latestSleep || member.latestMetrics?.sleep, {
-                        emptyLabel: "未填寫"
+                        emptyLabel: t(lang, "未填寫", "Not set"),
+                        lang
                       })}
                     </p>
                   </div>
@@ -321,21 +336,21 @@ export default async function FamilyMemberDetailPage({ params }) {
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <div className="rounded-2xl bg-white/80 p-4">
                       <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Steps Change</p>
-                      <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.steps)}</p>
+                      <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.steps, lang)}</p>
                     </div>
                     <div className="rounded-2xl bg-white/80 p-4">
                       <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Sleep Change</p>
-                      <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.sleep)}</p>
+                      <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.sleep, lang)}</p>
                     </div>
                     <div className="rounded-2xl bg-white/80 p-4">
                       <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Resting HR Change</p>
                       <p className="mt-1 font-semibold text-ink">
-                        {formatDelta(dashboard.trends.restingHeartRate)}
+                        {formatDelta(dashboard.trends.restingHeartRate, lang)}
                       </p>
                     </div>
                     <div className="rounded-2xl bg-white/80 p-4">
                       <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Weight Change</p>
-                      <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.weight)}</p>
+                      <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.weight, lang)}</p>
                     </div>
                   </div>
                 </div>
@@ -344,27 +359,31 @@ export default async function FamilyMemberDetailPage({ params }) {
               <div className="glass-panel rounded-[28px] p-6 shadow-glass">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.24em] text-slate-500">近期健康紀錄</p>
+                    <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{t(lang, "近期健康紀錄", "Recent Health Records")}</p>
                     <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">
-                      只顯示最近 {manualHealthRecords.length || 0} 筆手動紀錄
+                      {t(
+                        lang,
+                        `只顯示最近 ${manualHealthRecords.length || 0} 筆手動紀錄`,
+                        `Showing the latest ${manualHealthRecords.length || 0} manual records only`
+                      )}
                     </h3>
                   </div>
-                  <p className="text-sm text-slate-500">Apple Health 匯入資料不會在這裡顯示</p>
+                  <p className="text-sm text-slate-500">{t(lang, "Apple Health 匯入資料不會在這裡顯示", "Apple Health imports are hidden here")}</p>
                 </div>
                 <div className="mt-5">
-                  <HealthRecordTable records={manualHealthRecords} />
+                  <HealthRecordTable records={manualHealthRecords} lang={lang} />
                 </div>
               </div>
             </div>
 
             <div className="space-y-5">
-              <ExerciseLogList logs={member.exerciseLogs || []} />
+              <ExerciseLogList logs={member.exerciseLogs || []} lang={lang} />
             </div>
           </div>
         </div>
       ) : null}
 
-      <ProfileManagementPanel member={member} growth={growth} />
+      <ProfileManagementPanel member={member} growth={growth} lang={lang} />
     </section>
   );
 }
