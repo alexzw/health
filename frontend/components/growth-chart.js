@@ -32,6 +32,18 @@ function createChartPoints(measurements, key, width, height, padding) {
 }
 
 export function GrowthChart({ measurements, metric, color, label, unit }) {
+  if (!measurements?.length) {
+    return (
+      <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+        <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{label}</p>
+        <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">No data yet</h3>
+        <p className="mt-4 text-sm leading-6 text-slate-500">
+          Add Ryan&apos;s first growth measurement to start this chart.
+        </p>
+      </div>
+    );
+  }
+
   const width = 560;
   const height = 240;
   const padding = 28;

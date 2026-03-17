@@ -91,6 +91,7 @@ export default async function FamilyMemberDetailPage({ params }) {
   const manualHealthRecords = (member.healthDataRecords || []).filter(
     (record) => !String(record.notes || "").startsWith("由 ")
   );
+  const hasGrowthMeasurements = Boolean(growth?.measurements?.length);
 
   return (
     <section className="space-y-8">
@@ -146,22 +147,32 @@ export default async function FamilyMemberDetailPage({ params }) {
             </h2>
           </div>
           <GrowthInsights growth={growth} />
-          <div className="grid gap-5 lg:grid-cols-2">
-            <GrowthChart
-              measurements={growth.measurements}
-              metric="heightCm"
-              color="#0071e3"
-              label="Height Trend"
-              unit="cm"
-            />
-            <GrowthChart
-              measurements={growth.measurements}
-              metric="weightKg"
-              color="#34a853"
-              label="Weight Trend"
-              unit="kg"
-            />
-          </div>
+          {hasGrowthMeasurements ? (
+            <div className="grid gap-5 lg:grid-cols-2">
+              <GrowthChart
+                measurements={growth.measurements}
+                metric="heightCm"
+                color="#0071e3"
+                label="Height Trend"
+                unit="cm"
+              />
+              <GrowthChart
+                measurements={growth.measurements}
+                metric="weightKg"
+                color="#34a853"
+                label="Weight Trend"
+                unit="kg"
+              />
+            </div>
+          ) : (
+            <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Growth Charts</p>
+              <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">No chart data yet</h3>
+              <p className="mt-4 text-sm leading-6 text-slate-500">
+                Ryan&apos;s chart will appear after at least one usable height or weight measurement is available.
+              </p>
+            </div>
+          )}
         </div>
       ) : null}
 

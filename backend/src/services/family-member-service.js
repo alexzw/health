@@ -4,6 +4,53 @@ import { analyzeGrowthMeasurements } from "../lib/growth.js";
 import { buildHealthDashboardSummary } from "../lib/health-dashboard.js";
 import { HttpError } from "../lib/http-error.js";
 
+function normalizeIsoDate(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toISOString();
+}
+
+function buildDerivedGrowthMeasurements(member) {
+  const groupedMeasurements = new Map();
+
+  for (const record of member.healthDataRecords || []) {
+    if (!["height", "weight"].includes(record.category)) {
+      continue;
+    }
+
+    const measuredAt = normalizeIsoDate(record.recordedAt);
+
+    if (!measuredAt) {
+      continue;
+    }
+
+    const existingEntry = groupedMeasurements.get(measuredAt) || {
+      id: `derived-${measuredAt}`,
+      measuredAt,
+      heightCm: null,
+      weightKg: null
+    };
+
+    if (record.category === "height") {
+      existingEntry.heightCm = Number(record.value);
+    }
+
+    if (record.category === "weight") {
+      existingEntry.weightKg = Number(record.value);
+    }
+
+    groupedMeasurements.set(measuredAt, existingEntry);
+  }
+
+  return Array.from(groupedMeasurements.values())
+    .filter((measurement) => measurement.heightCm !== null || measurement.weightKg !== null)
+    .sort((left, right) => new Date(left.measuredAt) - new Date(right.measuredAt));
+}
+
 function presentMember(member) {
   const latestWeight =
     member.latestMetrics?.weight || findLatestMetric(member.healthDataRecords || [], "weight");
@@ -86,10 +133,11 @@ export class FamilyMemberService {
     }
 
     const growth = await this.repository.findGrowthByMemberId(id);
+    const effectiveGrowth = growth.length ? growth : buildDerivedGrowthMeasurements(member);
 
     return {
       member: presentMember(member),
-      ...analyzeGrowthMeasurements(growth)
+      ...analyzeGrowthMeasurements(effectiveGrowth)
     };
   }
 
