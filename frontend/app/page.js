@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { GrowthChart } from "../components/growth-chart";
 import { MetricHistoryChart } from "../components/metric-history-chart";
 import { MiniMetricChart } from "../components/mini-metric-chart";
+import { QuickLogSheet } from "../components/quick-log-sheet";
 import { ReminderPanel } from "../components/reminder-panel";
 import { TimeRangeCaption, TimeRangeFilter } from "../components/time-range-filter";
 import { formatMetric, formatRelativeDate, formatValueWithUnit } from "../lib/format";
@@ -126,6 +127,12 @@ export default async function HomePage({ searchParams }) {
   const familyHealthScore = buildFamilyHealthScore(engagementContext);
   const healthScoreBreakdown = buildHealthScoreBreakdown(engagementContext, lang);
   const memberHealthScores = buildMemberHealthScores(engagementContext, lang);
+  const quickLogValues = {
+    alexWeight: alex?.latestMetrics?.weight?.value || alexDashboard?.cards?.latestWeight?.value || null,
+    amelieWeight: amelie?.latestMetrics?.weight?.value || amelieDashboard?.cards?.latestWeight?.value || null,
+    ryanHeight: latestGrowth?.heightCm || null,
+    ryanWeight: latestGrowth?.weightKg || null
+  };
 
   const profileCards = [
     {
@@ -157,7 +164,7 @@ export default async function HomePage({ searchParams }) {
   ];
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-8 pb-24 sm:pb-10">
       <div className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
         <div className="panel-hero rounded-[40px] px-7 py-8 sm:px-10 sm:py-10">
             <p className="section-kicker">{t(lang, "Today Summary", "Today Summary")}</p>
@@ -204,6 +211,7 @@ export default async function HomePage({ searchParams }) {
           </div>
 
           <div className="mt-4 flex flex-wrap gap-3">
+            <QuickLogSheet latestValues={quickLogValues} lang={lang} />
             <Link href="/family-members/ryan" className="button-primary px-5 py-3 text-sm font-semibold">
               {t(lang, "查看 Ryan 檔案", "Open Ryan Profile")}
             </Link>
