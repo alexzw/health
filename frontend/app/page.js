@@ -87,13 +87,19 @@ export default async function HomePage() {
                 href="/family-members/alex"
                 className="rounded-full bg-blue px-5 py-3 text-sm font-semibold text-white"
               >
-                查看 Alex 概覽
+                Alex Overview
+              </Link>
+              <Link
+                href="/family-members/amelie"
+                className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-ink shadow-glass"
+              >
+                Amelie Overview
               </Link>
               <Link
                 href="/family-members/ryan"
                 className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-ink shadow-glass"
               >
-                查看 Ryan 成長追蹤
+                Ryan Growth
               </Link>
             </div>
           </div>
