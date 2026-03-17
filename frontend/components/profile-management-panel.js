@@ -77,6 +77,57 @@ function normalizeRecordCategory(category) {
   return (category || "").trim().toLowerCase();
 }
 
+const HEALTH_RECORD_PRESETS = [
+  { value: "weight", label: "體重", unit: "kg" },
+  { value: "height", label: "身高", unit: "cm" },
+  { value: "heart_rate", label: "心率", unit: "bpm" },
+  { value: "resting_heart_rate", label: "靜止心率", unit: "bpm" },
+  { value: "steps", label: "步數", unit: "steps" },
+  { value: "sleep", label: "睡眠", unit: "hours" }
+];
+
+const WORKOUT_TYPE_PRESETS = [
+  { value: "步行", label: "步行", met: 3.5 },
+  { value: "快走", label: "快走", met: 4.3 },
+  { value: "跑步", label: "跑步", met: 9.8 },
+  { value: "健身", label: "健身", met: 5.5 },
+  { value: "力量訓練", label: "力量訓練", met: 6 },
+  { value: "HIIT", label: "HIIT", met: 8.5 },
+  { value: "單車", label: "單車", met: 7.5 },
+  { value: "游泳", label: "游泳", met: 8 },
+  { value: "瑜伽", label: "瑜伽", met: 2.8 },
+  { value: "普拉提", label: "普拉提", met: 3 },
+  { value: "羽毛球", label: "羽毛球", met: 5.5 },
+  { value: "籃球", label: "籃球", met: 6.5 },
+  { value: "足球", label: "足球", met: 7 },
+  { value: "行山", label: "行山", met: 6 },
+  { value: "跳繩", label: "跳繩", met: 11 }
+];
+
+function estimateCaloriesBurned(workoutType, durationMinutes, weightKg) {
+  if (!workoutType || !durationMinutes) {
+    return "";
+  }
+
+  const preset = WORKOUT_TYPE_PRESETS.find((item) => item.value === workoutType);
+  if (!preset) {
+    return "";
+  }
+
+  const duration = Number(durationMinutes);
+  const weight = Number(weightKg || 70);
+  if (Number.isNaN(duration) || duration <= 0 || Number.isNaN(weight) || weight <= 0) {
+    return "";
+  }
+
+  const calories = (preset.met * 3.5 * weight * duration) / 200;
+  return String(Math.round(calories));
+}
+
+function isManualRecord(record) {
+  return !String(record?.notes || "").startsWith("由 ");
+}
+
 function getHealthCategoryOrder(category) {
   const map = {
     weight: 0,
@@ -589,6 +640,12 @@ function AppleHealthQuickGuide() {
 export function ProfileManagementPanel({ member, growth }) {
   const router = useRouter();
   const isAdult = member.familyRole !== "Child";
+  const latestWeightValue =
+    member.latestMetrics?.weight?.value ||
+    member.healthDataRecords?.find((record) => normalizeRecordCategory(record.category) === "weight")
+      ?.value ||
+    "";
+  const manualHealthRecords = (member.healthDataRecords || []).filter(isManualRecord);
   const tabs = [
     { id: "profile", label: "個人資料" },
     { id: "record", label: "健康紀錄" },
@@ -612,11 +669,16 @@ export function ProfileManagementPanel({ member, growth }) {
     gender: member.gender,
     dateOfBirth: member.dateOfBirth
   });
+  const [quickWeightForm, setQuickWeightForm] = useState({
+    value: latestWeightValue ? String(latestWeightValue) : "",
+    recordedAt: toDateTimeLocalValue(new Date().toISOString()),
+    notes: ""
+  });
 
   const [newRecordForm, setNewRecordForm] = useState({
-    category: "",
+    category: "weight",
     value: "",
-    unit: "",
+    unit: "kg",
     notes: "",
     recordedAt: toDateTimeLocalValue(new Date().toISOString())
   });
@@ -658,6 +720,16 @@ export function ProfileManagementPanel({ member, growth }) {
       caloriesBurned: "",
       notes: "",
       performedAt: toDateTimeLocalValue(new Date().toISOString())
+    });
+  }
+
+  function resetRecordForm() {
+    setNewRecordForm({
+      category: "weight",
+      value: "",
+      unit: "kg",
+      notes: "",
+      recordedAt: toDateTimeLocalValue(new Date().toISOString())
     });
   }
 
@@ -824,45 +896,119 @@ export function ProfileManagementPanel({ member, growth }) {
 
   function renderProfileTab() {
     return (
-      <SectionCard title="編輯個人資料" description="修改姓名、性別和生日。">
-        <form
-          className="space-y-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            runAction(() => updateFamilyMember(member.id, profileForm), "個人資料已更新");
-          }}
-        >
-          <FieldLabel label="姓名">
-            <input
-              className={baseInputClass}
-              value={profileForm.name}
-              onChange={(event) =>
-                setProfileForm((current) => ({ ...current, name: event.target.value }))
-              }
-            />
-          </FieldLabel>
-          <FieldLabel label="性別">
-            <input
-              className={baseInputClass}
-              value={profileForm.gender}
-              onChange={(event) =>
-                setProfileForm((current) => ({ ...current, gender: event.target.value }))
-              }
-            />
-          </FieldLabel>
-          <FieldLabel label="生日">
-            <input
-              type="date"
-              className={baseInputClass}
-              value={toDateInputValue(profileForm.dateOfBirth)}
-              onChange={(event) =>
-                setProfileForm((current) => ({ ...current, dateOfBirth: event.target.value }))
-              }
-            />
-          </FieldLabel>
-          <SubmitButton disabled={isSaving}>保存</SubmitButton>
-        </form>
-      </SectionCard>
+      <div className="space-y-5">
+        <SectionCard title="編輯個人資料" description="修改姓名、性別和生日。">
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              runAction(() => updateFamilyMember(member.id, profileForm), "個人資料已更新");
+            }}
+          >
+            <FieldLabel label="姓名">
+              <input
+                className={baseInputClass}
+                value={profileForm.name}
+                onChange={(event) =>
+                  setProfileForm((current) => ({ ...current, name: event.target.value }))
+                }
+              />
+            </FieldLabel>
+            <FieldLabel label="性別">
+              <select
+                className={baseInputClass}
+                value={profileForm.gender}
+                onChange={(event) =>
+                  setProfileForm((current) => ({ ...current, gender: event.target.value }))
+                }
+              >
+                <option value="Male">男</option>
+                <option value="Female">女</option>
+              </select>
+            </FieldLabel>
+            <FieldLabel label="生日">
+              <input
+                type="date"
+                className={baseInputClass}
+                value={toDateInputValue(profileForm.dateOfBirth)}
+                onChange={(event) =>
+                  setProfileForm((current) => ({ ...current, dateOfBirth: event.target.value }))
+                }
+              />
+            </FieldLabel>
+            <SubmitButton disabled={isSaving}>保存</SubmitButton>
+          </form>
+        </SectionCard>
+
+        {isAdult ? (
+          <SectionCard title="快速記錄體重" description="這裡可以直接補一筆最新體重，不用再走健康紀錄表單。">
+            <form
+              className="grid gap-4 md:grid-cols-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                runAction(
+                  async () => {
+                    await createHealthRecord(member.id, {
+                      category: "weight",
+                      value: quickWeightForm.value,
+                      unit: "kg",
+                      notes: quickWeightForm.notes,
+                      recordedAt: new Date(quickWeightForm.recordedAt).toISOString()
+                    });
+                    setQuickWeightForm({
+                      value: "",
+                      recordedAt: toDateTimeLocalValue(new Date().toISOString()),
+                      notes: ""
+                    });
+                  },
+                  "體重已記錄"
+                );
+              }}
+            >
+              <FieldLabel label="體重（kg）">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.1"
+                  className={baseInputClass}
+                  value={quickWeightForm.value}
+                  onChange={(event) =>
+                    setQuickWeightForm((current) => ({ ...current, value: event.target.value }))
+                  }
+                />
+              </FieldLabel>
+              <FieldLabel label="記錄時間">
+                <input
+                  type="datetime-local"
+                  className={baseInputClass}
+                  value={quickWeightForm.recordedAt}
+                  onChange={(event) =>
+                    setQuickWeightForm((current) => ({
+                      ...current,
+                      recordedAt: event.target.value
+                    }))
+                  }
+                />
+              </FieldLabel>
+              <div className="md:col-span-2">
+                <FieldLabel label="備註">
+                  <input
+                    className={baseInputClass}
+                    placeholder="例如：早上量度"
+                    value={quickWeightForm.notes}
+                    onChange={(event) =>
+                      setQuickWeightForm((current) => ({ ...current, notes: event.target.value }))
+                    }
+                  />
+                </FieldLabel>
+              </div>
+              <div className="md:col-span-2">
+                <SubmitButton disabled={isSaving}>新增體重紀錄</SubmitButton>
+              </div>
+            </form>
+          </SectionCard>
+        ) : null}
+      </div>
     );
   }
 
@@ -875,26 +1021,44 @@ export function ProfileManagementPanel({ member, growth }) {
             onSubmit={(event) => {
               event.preventDefault();
               runAction(
-                () =>
-                  createHealthRecord(member.id, {
+                async () => {
+                  await createHealthRecord(member.id, {
                     ...newRecordForm,
                     recordedAt: new Date(newRecordForm.recordedAt).toISOString()
-                  }),
+                  });
+                  resetRecordForm();
+                },
                 "健康紀錄已新增"
               );
             }}
           >
             <FieldLabel label="類型">
-              <input
+              <select
                 className={baseInputClass}
                 value={newRecordForm.category}
                 onChange={(event) =>
-                  setNewRecordForm((current) => ({ ...current, category: event.target.value }))
+                  setNewRecordForm((current) => {
+                    const preset = HEALTH_RECORD_PRESETS.find((item) => item.value === event.target.value);
+                    return {
+                      ...current,
+                      category: event.target.value,
+                      unit: preset?.unit || current.unit
+                    };
+                  })
                 }
-              />
+              >
+                {HEALTH_RECORD_PRESETS.map((preset) => (
+                  <option key={preset.value} value={preset.value}>
+                    {preset.label}
+                  </option>
+                ))}
+              </select>
             </FieldLabel>
             <FieldLabel label="數值">
               <input
+                type="number"
+                inputMode="decimal"
+                step="0.1"
                 className={baseInputClass}
                 value={newRecordForm.value}
                 onChange={(event) =>
@@ -940,7 +1104,7 @@ export function ProfileManagementPanel({ member, growth }) {
 
         <HealthRecordGroupList
           memberId={member.id}
-          items={member.healthDataRecords || []}
+          items={manualHealthRecords}
           onRunAction={runAction}
           isSaving={isSaving}
         />
@@ -1062,7 +1226,7 @@ export function ProfileManagementPanel({ member, growth }) {
   function renderExerciseTab() {
     return (
       <div className="space-y-5">
-        <SectionCard title="新增運動紀錄" description="新增完之後，下方每條可以直接改或刪除。">
+        <SectionCard title="新增運動紀錄" description="揀運動類型後，系統會按你的最近體重自動估算卡路里。">
           <form
             className="grid gap-4 md:grid-cols-2"
             autoComplete="off"
@@ -1081,23 +1245,28 @@ export function ProfileManagementPanel({ member, growth }) {
             }}
           >
             <FieldLabel label="運動類型">
-              <input
+              <select
                 className={baseInputClass}
-                list="workout-type-options"
-                placeholder="例如：跑步、健身、游泳"
                 value={newExerciseForm.workoutType}
                 onChange={(event) =>
-                  setNewExerciseForm((current) => ({ ...current, workoutType: event.target.value }))
+                  setNewExerciseForm((current) => ({
+                    ...current,
+                    workoutType: event.target.value,
+                    caloriesBurned: estimateCaloriesBurned(
+                      event.target.value,
+                      current.durationMinutes,
+                      latestWeightValue
+                    )
+                  }))
                 }
-              />
-              <datalist id="workout-type-options">
-                <option value="跑步" />
-                <option value="健身" />
-                <option value="力量訓練" />
-                <option value="Cardio" />
-                <option value="快走" />
-                <option value="游泳" />
-              </datalist>
+              >
+                <option value="">請選擇運動類型</option>
+                {WORKOUT_TYPE_PRESETS.map((preset) => (
+                  <option key={preset.value} value={preset.value}>
+                    {preset.label}
+                  </option>
+                ))}
+              </select>
             </FieldLabel>
             <FieldLabel label="時長（分鐘）">
               <input
@@ -1110,25 +1279,24 @@ export function ProfileManagementPanel({ member, growth }) {
                 onChange={(event) =>
                   setNewExerciseForm((current) => ({
                     ...current,
-                    durationMinutes: event.target.value
+                    durationMinutes: event.target.value,
+                    caloriesBurned: estimateCaloriesBurned(
+                      current.workoutType,
+                      event.target.value,
+                      latestWeightValue
+                    )
                   }))
                 }
               />
             </FieldLabel>
-            <FieldLabel label="卡路里">
+            <FieldLabel label="卡路里（自動估算）">
               <input
                 type="number"
                 inputMode="numeric"
                 min="0"
                 className={baseInputClass}
-                placeholder="例如：320"
                 value={newExerciseForm.caloriesBurned}
-                onChange={(event) =>
-                  setNewExerciseForm((current) => ({
-                    ...current,
-                    caloriesBurned: event.target.value
-                  }))
-                }
+                readOnly
               />
             </FieldLabel>
             <FieldLabel label="運動時間">
@@ -1155,7 +1323,7 @@ export function ProfileManagementPanel({ member, growth }) {
             </div>
             <div className="md:col-span-2">
               <p className="mb-3 text-xs text-slate-500">
-                先填運動類型，再填分鐘和卡路里，送出後會自動清空表單。
+                估算會按最近體重 {latestWeightValue || 70} kg 計算；如果未有體重，會先用 70 kg。
               </p>
               <SubmitButton disabled={isSaving}>新增運動紀錄</SubmitButton>
             </div>
@@ -1179,17 +1347,48 @@ export function ProfileManagementPanel({ member, growth }) {
           renderFields={(draft, updateDraft) => (
             <div className="grid gap-4 md:grid-cols-2">
               <FieldLabel label="運動類型">
-                <input
+                <select
                   className={baseInputClass}
                   value={draft.workoutType}
-                  onChange={(event) => updateDraft({ workoutType: event.target.value })}
-                />
+                  onChange={(event) =>
+                    updateDraft({
+                      workoutType: event.target.value,
+                      caloriesBurned:
+                        estimateCaloriesBurned(
+                          event.target.value,
+                          draft.durationMinutes,
+                          latestWeightValue
+                        ) || draft.caloriesBurned
+                    })
+                  }
+                >
+                  <option value="">請選擇運動類型</option>
+                  {!WORKOUT_TYPE_PRESETS.some((preset) => preset.value === draft.workoutType) &&
+                  draft.workoutType ? (
+                    <option value={draft.workoutType}>{draft.workoutType}</option>
+                  ) : null}
+                  {WORKOUT_TYPE_PRESETS.map((preset) => (
+                    <option key={preset.value} value={preset.value}>
+                      {preset.label}
+                    </option>
+                  ))}
+                </select>
               </FieldLabel>
               <FieldLabel label="時長（分鐘）">
                 <input
                   className={baseInputClass}
                   value={draft.durationMinutes}
-                  onChange={(event) => updateDraft({ durationMinutes: event.target.value })}
+                  onChange={(event) =>
+                    updateDraft({
+                      durationMinutes: event.target.value,
+                      caloriesBurned:
+                        estimateCaloriesBurned(
+                          draft.workoutType,
+                          event.target.value,
+                          latestWeightValue
+                        ) || draft.caloriesBurned
+                    })
+                  }
                 />
               </FieldLabel>
               <FieldLabel label="卡路里">

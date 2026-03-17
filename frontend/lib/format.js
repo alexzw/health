@@ -63,7 +63,9 @@ export function formatValueWithUnit(value, unit, options = {}) {
   const number = Number(value);
   const fractionDigits =
     options.maximumFractionDigits ??
-    (Number.isInteger(number) || unit === "count" || unit === "steps" ? 0 : 1);
+    (Number.isInteger(number) || unit === "count" || unit === "steps" || unit === "bpm" || unit === "count/min"
+      ? 0
+      : 1);
   const formattedNumber = formatNumber(number, fractionDigits);
   const formattedUnit = formatUnitLabel(unit);
 

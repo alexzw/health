@@ -1,5 +1,14 @@
 import { formatCompactDate, formatValueWithUnit } from "../lib/format";
 
+function sampleXAxisLabels(items) {
+  if (items.length <= 3) {
+    return items;
+  }
+
+  const middleIndex = Math.floor((items.length - 1) / 2);
+  return [items[0], items[middleIndex], items[items.length - 1]];
+}
+
 function buildPoints(items, width, height, padding) {
   const values = items.map((item) => item.value);
   const minValue = Math.min(...values);
@@ -60,7 +69,7 @@ export function MetricHistoryChart({ items, color, label, unit }) {
       </svg>
 
       <div className="mt-4 flex flex-wrap gap-3 text-xs text-slate-500">
-        {items.map((item) => (
+        {sampleXAxisLabels(items).map((item) => (
           <span key={`${item.date}-${item.value}`} className="rounded-full bg-white/70 px-3 py-1">
             {formatCompactDate(item.date, true)}
           </span>

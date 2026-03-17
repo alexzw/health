@@ -5,6 +5,15 @@ function formatDate(dateString) {
   });
 }
 
+function sampleMeasurements(measurements) {
+  if (measurements.length <= 3) {
+    return measurements;
+  }
+
+  const middleIndex = Math.floor((measurements.length - 1) / 2);
+  return [measurements[0], measurements[middleIndex], measurements[measurements.length - 1]];
+}
+
 function createChartPoints(measurements, key, width, height, padding) {
   const values = measurements.map((measurement) => measurement[key]);
   const minValue = Math.min(...values);
@@ -78,7 +87,7 @@ export function GrowthChart({ measurements, metric, color, label, unit }) {
       </svg>
 
       <div className="mt-4 flex flex-wrap gap-3 text-xs text-slate-500">
-        {measurements.map((measurement) => (
+        {sampleMeasurements(measurements).map((measurement) => (
           <span key={measurement.id} className="rounded-full bg-white/70 px-3 py-1">
             {formatDate(measurement.measuredAt)}
           </span>

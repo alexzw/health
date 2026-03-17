@@ -82,13 +82,15 @@ export default async function FamilyMemberDetailPage({ params }) {
     throw error;
   }
 
-  const weightHistory = member.metricTrends?.weight || [];
   const stepsHistory = member.metricTrends?.steps || [];
   const sleepHistory = member.metricTrends?.sleep || [];
   const restingHeartRateHistory = member.metricTrends?.resting_heart_rate || [];
   const heartRateHistory = member.metricTrends?.heart_rate || [];
   const secondaryTrend = pickSecondaryTrend(member.metricTrends);
   const dashboard = member.dashboard || null;
+  const manualHealthRecords = (member.healthDataRecords || []).filter(
+    (record) => !String(record.notes || "").startsWith("由 ")
+  );
 
   return (
     <section className="space-y-8">
@@ -219,28 +221,16 @@ export default async function FamilyMemberDetailPage({ params }) {
             </div>
           ) : null}
 
-          <div className="grid gap-5 lg:grid-cols-2">
-            <MetricHistoryChart
-              items={weightHistory}
-              color="#0071e3"
-              label="體重趨勢"
-              unit="kg"
-            />
-            {secondaryTrend ? (
+          {secondaryTrend ? (
+            <div className="grid gap-5 lg:grid-cols-1">
               <MetricHistoryChart
                 items={secondaryTrend.items}
                 color={secondaryTrend.color}
                 label={secondaryTrend.label}
                 unit={secondaryTrend.unit}
               />
-            ) : (
-              <div className="glass-panel rounded-[28px] p-6 shadow-glass">
-                <p className="text-sm text-slate-500">
-                  Apple Health 匯入更多步數、心率或睡眠資料後，這裡會顯示第二張趨勢圖。
-                </p>
-              </div>
-            )}
-          </div>
+            </div>
+          ) : null}
 
           <div className="grid gap-5 lg:grid-cols-2">
             <MetricHistoryChart
@@ -345,13 +335,13 @@ export default async function FamilyMemberDetailPage({ params }) {
                   <div>
                     <p className="text-xs uppercase tracking-[0.24em] text-slate-500">近期健康紀錄</p>
                     <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">
-                      只顯示最近 {member.healthDataRecords?.length || 0} 筆
+                      只顯示最近 {manualHealthRecords.length || 0} 筆手動紀錄
                     </h3>
                   </div>
-                  <p className="text-sm text-slate-500">總數 {member.totalHealthRecordCount || 0} 筆</p>
+                  <p className="text-sm text-slate-500">Apple Health 匯入資料不會在這裡顯示</p>
                 </div>
                 <div className="mt-5">
-                  <HealthRecordTable records={member.healthDataRecords || []} />
+                  <HealthRecordTable records={manualHealthRecords} />
                 </div>
               </div>
             </div>

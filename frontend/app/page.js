@@ -80,11 +80,8 @@ export default async function HomePage() {
           <div>
             <p className="text-xs uppercase tracking-[0.32em] text-slate-500">家庭健康 Dashboard</p>
             <h1 className="mt-4 max-w-3xl text-5xl font-semibold tracking-[-0.06em] text-ink">
-              用摘要、趨勢和提醒去看健康，而不是被 raw data 淹沒。
+              家庭健康一覽
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600">
-              參考 Apple Health 常見的 Summary、Pinned、Highlights 和 Trends 思路，首頁現在只保留最值得注意的家庭健康訊號。
-            </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/family-members/alex"
