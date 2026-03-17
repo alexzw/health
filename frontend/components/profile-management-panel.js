@@ -1359,16 +1359,6 @@ export function ProfileManagementPanel({ member, growth }) {
                 }
               />
             </FieldLabel>
-            <FieldLabel label="卡路里（自動估算）">
-              <input
-                type="number"
-                inputMode="numeric"
-                min="0"
-                className={baseInputClass}
-                value={newExerciseForm.caloriesBurned}
-                readOnly
-              />
-            </FieldLabel>
             <FieldLabel label="運動時間">
               <input
                 type="datetime-local"
@@ -1393,7 +1383,7 @@ export function ProfileManagementPanel({ member, growth }) {
             </div>
             <div className="md:col-span-2">
               <p className="mb-3 text-xs text-slate-500">
-                估算會按最近體重 {latestWeightValue || 70} kg 計算；如果未有體重，會先用 70 kg。
+                卡路里會按最近體重 {latestWeightValue || 70} kg 自動估算並儲存；如果未有體重，會先用 70 kg。
               </p>
               <SubmitButton disabled={isSaving}>新增運動紀錄</SubmitButton>
             </div>
