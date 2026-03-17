@@ -3,9 +3,16 @@ import { cookies } from "next/headers";
 import { GrowthChart } from "../components/growth-chart";
 import { MetricHistoryChart } from "../components/metric-history-chart";
 import { MiniMetricChart } from "../components/mini-metric-chart";
+import { TimeRangeCaption, TimeRangeFilter } from "../components/time-range-filter";
 import { formatMetric, formatRelativeDate, formatValueWithUnit } from "../lib/format";
 import { getFamilyMember, getFamilyMembers, getGrowthTracking } from "../lib/api";
 import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../lib/i18n";
+import {
+  buildMetricSeriesFromRecords,
+  filterItemsByRange,
+  getTimeRangeLabel,
+  normalizeTimeRange
+} from "../lib/time-range";
 
 function buildTrendChange(items, unit, lang) {
   if (!items || items.length < 2) {
@@ -54,9 +61,11 @@ function buildActivitySummary(member, dashboard, lang) {
   return steps ? formatMetric(steps, { lang }) : formatMetric(sleep, { lang });
 }
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }) {
   const cookieStore = await cookies();
   const lang = normalizeLanguage(cookieStore.get(LANGUAGE_COOKIE)?.value);
+  const resolvedSearchParams = await searchParams;
+  const range = normalizeTimeRange(resolvedSearchParams?.range);
   let members = [];
   let alex = null;
   let amelie = null;
@@ -78,14 +87,19 @@ export default async function HomePage() {
 
   const alexDashboard = alex?.dashboard || null;
   const amelieDashboard = amelie?.dashboard || null;
-  const alexWeightTrend = alex?.metricTrends?.weight || [];
-  const amelieWeightTrend = amelie?.metricTrends?.weight || [];
-  const alexStepsTrend = alex?.metricTrends?.steps || [];
-  const alexSleepTrend = alex?.metricTrends?.sleep || [];
-  const alexHeartTrend = alex?.metricTrends?.resting_heart_rate || [];
-  const amelieStepsTrend = amelie?.metricTrends?.steps || [];
-  const amelieSleepTrend = amelie?.metricTrends?.sleep || [];
-  const growthMeasurements = growth?.measurements || [];
+  const alexWeightTrend = buildMetricSeriesFromRecords(alex?.healthDataRecords || [], "weight", range);
+  const amelieWeightTrend = buildMetricSeriesFromRecords(amelie?.healthDataRecords || [], "weight", range);
+  const alexStepsTrend = buildMetricSeriesFromRecords(alex?.healthDataRecords || [], "steps", range, "sum");
+  const alexSleepTrend = buildMetricSeriesFromRecords(alex?.healthDataRecords || [], "sleep", range, "sum");
+  const alexHeartTrend = buildMetricSeriesFromRecords(
+    alex?.healthDataRecords || [],
+    "resting_heart_rate",
+    range,
+    "average"
+  );
+  const amelieStepsTrend = buildMetricSeriesFromRecords(amelie?.healthDataRecords || [], "steps", range, "sum");
+  const amelieSleepTrend = buildMetricSeriesFromRecords(amelie?.healthDataRecords || [], "sleep", range, "sum");
+  const growthMeasurements = filterItemsByRange(growth?.measurements || [], range, (item) => item.measuredAt);
   const latestGrowth = growth?.summary?.latestMeasurement || null;
   const growthGain = growth?.summary?.totalHeightGainCm ?? null;
   const homeInsights = [
@@ -178,6 +192,10 @@ export default async function HomePage() {
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3">
+            <TimeRangeFilter currentRange={range} basePath="/" lang={lang} />
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-3">
             <Link href="/family-members/ryan" className="button-primary px-5 py-3 text-sm font-semibold">
               {t(lang, "查看 Ryan 檔案", "Open Ryan Profile")}
             </Link>
@@ -234,9 +252,7 @@ export default async function HomePage() {
                 {t(lang, "Ryan 成長趨勢", "Ryan Growth Trend")}
               </h2>
             </div>
-            <p className="text-sm text-slate-500">
-              {t(lang, "顯示累積成長變化與最新量度。", "Track the latest measurement and total growth change.")}
-            </p>
+            <TimeRangeCaption range={range} lang={lang} />
           </div>
           <div className="mt-5">
             <GrowthChart
@@ -260,20 +276,20 @@ export default async function HomePage() {
               <MetricHistoryChart
                 items={alexWeightTrend}
                 color="#0f6cbd"
-                label={t(lang, "Alex 最近 30 天體重", "Alex Weight - Last 30 Days")}
+                label={t(lang, "Alex 體重趨勢", "Alex Weight Trend")}
                 unit="kg"
                 lang={lang}
-                timeframeLabel={t(lang, "時間範圍：最近 30 天", "Timeframe: last 30 days")}
+                timeframeLabel={`${t(lang, "時間範圍：", "Timeframe: ")}${getTimeRangeLabel(range, lang)}`}
                 emptyActionLabel={t(lang, "新增體重記錄", "Add Weight Record")}
                 emptyActionHref="/family-members/alex#manage"
               />
               <MetricHistoryChart
                 items={amelieWeightTrend}
                 color="#12805c"
-                label={t(lang, "Amelie 最近 30 天體重", "Amelie Weight - Last 30 Days")}
+                label={t(lang, "Amelie 體重趨勢", "Amelie Weight Trend")}
                 unit="kg"
                 lang={lang}
-                timeframeLabel={t(lang, "時間範圍：最近 30 天", "Timeframe: last 30 days")}
+                timeframeLabel={`${t(lang, "時間範圍：", "Timeframe: ")}${getTimeRangeLabel(range, lang)}`}
                 emptyActionLabel={t(lang, "新增體重記錄", "Add Weight Record")}
                 emptyActionHref="/family-members/amelie#manage"
               />
@@ -300,9 +316,9 @@ export default async function HomePage() {
               unit="steps"
               compact
               lang={lang}
-              timeframeLabel={t(lang, "最近 30 天", "Last 30 days")}
+              timeframeLabel={getTimeRangeLabel(range, lang)}
               emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")}
-              emptyActionHref="/family-members/alex#manage"
+              emptyActionHref="/integrations"
             />
             <MiniMetricChart
               items={alexSleepTrend}
@@ -311,9 +327,9 @@ export default async function HomePage() {
               unit="hours"
               compact
               lang={lang}
-              timeframeLabel={t(lang, "最近 30 天", "Last 30 days")}
+              timeframeLabel={getTimeRangeLabel(range, lang)}
               emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")}
-              emptyActionHref="/family-members/alex#manage"
+              emptyActionHref="/integrations"
             />
             <MiniMetricChart
               items={amelieStepsTrend}
@@ -322,9 +338,9 @@ export default async function HomePage() {
               unit="steps"
               compact
               lang={lang}
-              timeframeLabel={t(lang, "最近 30 天", "Last 30 days")}
+              timeframeLabel={getTimeRangeLabel(range, lang)}
               emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")}
-              emptyActionHref="/family-members/amelie#manage"
+              emptyActionHref="/integrations"
             />
             <MiniMetricChart
               items={alexHeartTrend}
@@ -333,9 +349,9 @@ export default async function HomePage() {
               unit="bpm"
               compact
               lang={lang}
-              timeframeLabel={t(lang, "最近 30 天", "Last 30 days")}
+              timeframeLabel={getTimeRangeLabel(range, lang)}
               emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")}
-              emptyActionHref="/family-members/alex#manage"
+              emptyActionHref="/integrations"
             />
           </div>
         </div>

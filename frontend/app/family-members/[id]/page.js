@@ -11,10 +11,17 @@ import { RecentGrowthRecords } from "../../../components/recent-growth-records";
 import { CoachActionsPanel } from "../../../components/coach-actions-panel";
 import { ProfileManagementPanel } from "../../../components/profile-management-panel";
 import { SmartHealthCoach } from "../../../components/smart-health-coach";
+import { TimeRangeCaption, TimeRangeFilter } from "../../../components/time-range-filter";
 import { calculateBmi } from "../../../lib/bmi";
 import { formatChineseDate, formatMetric, formatRelativeDate, formatValueWithUnit } from "../../../lib/format";
 import { getCoachInsights, getFamilyMember, getGrowthTracking, getWeeklyGoals } from "../../../lib/api";
 import { LANGUAGE_COOKIE, normalizeLanguage, t, translateDynamicText } from "../../../lib/i18n";
+import {
+  buildMetricSeriesFromRecords,
+  filterItemsByRange,
+  getTimeRangeLabel,
+  normalizeTimeRange
+} from "../../../lib/time-range";
 
 function pickSecondaryTrend(metricTrends = {}) {
   const candidates = [
@@ -70,10 +77,12 @@ export async function generateMetadata({ params }) {
   }
 }
 
-export default async function FamilyMemberDetailPage({ params }) {
+export default async function FamilyMemberDetailPage({ params, searchParams }) {
   const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
   const cookieStore = await cookies();
   const lang = normalizeLanguage(cookieStore.get(LANGUAGE_COOKIE)?.value);
+  const range = normalizeTimeRange(resolvedSearchParams?.range);
   let member;
   let growth = null;
   let bmi = null;
@@ -101,19 +110,26 @@ export default async function FamilyMemberDetailPage({ params }) {
     throw error;
   }
 
-  const stepsHistory = member.metricTrends?.steps || [];
-  const sleepHistory = member.metricTrends?.sleep || [];
-  const waistHistory = member.metricTrends?.waist || [];
-  const hipHistory = member.metricTrends?.hip || [];
-  const chestHistory = member.metricTrends?.chest || [];
-  const restingHeartRateHistory = member.metricTrends?.resting_heart_rate || [];
-  const heartRateHistory = member.metricTrends?.heart_rate || [];
+  const stepsHistory = buildMetricSeriesFromRecords(member.healthDataRecords || [], "steps", range, "sum");
+  const sleepHistory = buildMetricSeriesFromRecords(member.healthDataRecords || [], "sleep", range, "sum");
+  const waistHistory = buildMetricSeriesFromRecords(member.healthDataRecords || [], "waist", range);
+  const hipHistory = buildMetricSeriesFromRecords(member.healthDataRecords || [], "hip", range);
+  const chestHistory = buildMetricSeriesFromRecords(member.healthDataRecords || [], "chest", range);
+  const restingHeartRateHistory = buildMetricSeriesFromRecords(
+    member.healthDataRecords || [],
+    "resting_heart_rate",
+    range,
+    "average"
+  );
+  const heartRateHistory = buildMetricSeriesFromRecords(member.healthDataRecords || [], "heart_rate", range, "average");
+  const weightHistory = buildMetricSeriesFromRecords(member.healthDataRecords || [], "weight", range);
   const secondaryTrend = pickSecondaryTrend(member.metricTrends);
   const dashboard = member.dashboard || null;
-  const manualHealthRecords = (member.healthDataRecords || []).filter(
+  const manualHealthRecords = filterItemsByRange((member.healthDataRecords || []).filter(
     (record) => !String(record.notes || "").startsWith("由 ")
-  );
-  const hasGrowthMeasurements = Boolean(growth?.measurements?.length);
+  ), range, (record) => record.recordedAt);
+  const filteredGrowthMeasurements = filterItemsByRange(growth?.measurements || [], range, (item) => item.measuredAt);
+  const hasGrowthMeasurements = Boolean(filteredGrowthMeasurements.length);
   const latestSyncMetric =
     dashboard?.cards?.latestSleep ||
     dashboard?.cards?.latestSteps ||
@@ -169,6 +185,9 @@ export default async function FamilyMemberDetailPage({ params }) {
             ) : null}
           </div>
         </div>
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <TimeRangeFilter currentRange={range} basePath={`/family-members/${member.id}`} lang={lang} />
+        </div>
       </div>
 
       {growth ? (
@@ -186,13 +205,16 @@ export default async function FamilyMemberDetailPage({ params }) {
                 {t(lang, "新增成長記錄", "Add Growth Record")}
               </Link>
             </div>
+            <div className="mt-4">
+              <TimeRangeCaption range={range} lang={lang} />
+            </div>
           </div>
           <GrowthInsights growth={growth} lang={lang} />
           {hasGrowthMeasurements ? (
             <div className="space-y-5">
               <div className="grid gap-5 lg:grid-cols-2">
                 <GrowthChart
-                  measurements={growth.measurements}
+                  measurements={filteredGrowthMeasurements}
                   metric="heightCm"
                   color="#0071e3"
                   label={t(lang, "身高趨勢", "Height Trend")}
@@ -200,7 +222,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                   lang={lang}
                 />
                 <GrowthChart
-                  measurements={growth.measurements}
+                  measurements={filteredGrowthMeasurements}
                   metric="weightKg"
                   color="#34a853"
                   label={t(lang, "體重趨勢", "Weight Trend")}
@@ -208,7 +230,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                   lang={lang}
                 />
               </div>
-              <RecentGrowthRecords memberId={member.id} measurements={growth.measurements} lang={lang} />
+              <RecentGrowthRecords memberId={member.id} measurements={filteredGrowthMeasurements} lang={lang} />
             </div>
           ) : (
             <div className="soft-card rounded-[28px] p-6">
@@ -307,7 +329,15 @@ export default async function FamilyMemberDetailPage({ params }) {
           {secondaryTrend ? (
             <div className="grid gap-5 lg:grid-cols-1">
               <MetricHistoryChart
-                items={secondaryTrend.items}
+                items={
+                  secondaryTrend.key === "steps"
+                    ? stepsHistory
+                    : secondaryTrend.key === "resting_heart_rate"
+                      ? restingHeartRateHistory
+                      : secondaryTrend.key === "heart_rate"
+                        ? heartRateHistory
+                        : sleepHistory
+                }
                 color={secondaryTrend.color}
                 label={
                   secondaryTrend.key === "steps"
@@ -320,33 +350,45 @@ export default async function FamilyMemberDetailPage({ params }) {
                 }
                 unit={secondaryTrend.unit}
                 lang={lang}
-                timeframeLabel={t(lang, "時間範圍：最近 30 天", "Timeframe: last 30 days")}
+                timeframeLabel={`${t(lang, "時間範圍：", "Timeframe: ")}${getTimeRangeLabel(range, lang)}`}
                 emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")}
-                emptyActionHref="#manage"
+                emptyActionHref="/integrations"
               />
             </div>
           ) : null}
 
           <div className="grid gap-5 lg:grid-cols-2">
             <MetricHistoryChart
+              items={weightHistory}
+              color="#0f6cbd"
+              label={t(lang, "體重趨勢", "Weight Trend")}
+              unit="kg"
+              lang={lang}
+              timeframeLabel={`${t(lang, "時間範圍：", "Timeframe: ")}${getTimeRangeLabel(range, lang)}`}
+              emptyActionLabel={t(lang, "新增體重記錄", "Add Weight Record")}
+              emptyActionHref="#manage"
+            />
+            <MetricHistoryChart
               items={stepsHistory}
               color="#34a853"
               label={t(lang, "每日步數", "Daily Steps")}
               unit="steps"
               lang={lang}
-              timeframeLabel={t(lang, "時間範圍：最近 30 天", "Timeframe: last 30 days")}
+              timeframeLabel={`${t(lang, "時間範圍：", "Timeframe: ")}${getTimeRangeLabel(range, lang)}`}
               emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")}
-              emptyActionHref="#manage"
+              emptyActionHref="/integrations"
             />
+          </div>
+          <div className="grid gap-5 lg:grid-cols-2">
             <MetricHistoryChart
               items={sleepHistory}
               color="#5c6ac4"
               label={t(lang, "每日睡眠", "Daily Sleep")}
               unit="hours"
               lang={lang}
-              timeframeLabel={t(lang, "時間範圍：最近 30 天", "Timeframe: last 30 days")}
+              timeframeLabel={`${t(lang, "時間範圍：", "Timeframe: ")}${getTimeRangeLabel(range, lang)}`}
               emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")}
-              emptyActionHref="#manage"
+              emptyActionHref="/integrations"
             />
           </div>
 
@@ -363,9 +405,9 @@ export default async function FamilyMemberDetailPage({ params }) {
               </p>
             </div>
             <div className="mt-5 grid gap-5 lg:grid-cols-3">
-              <MetricHistoryChart items={waistHistory} color="#ff8a65" label={t(lang, "腰圍趨勢", "Waist Trend")} unit="cm" lang={lang} timeframeLabel={t(lang, "時間範圍：最近 30 天", "Timeframe: last 30 days")} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
-              <MetricHistoryChart items={hipHistory} color="#7c4dff" label={t(lang, "臀圍趨勢", "Hip Trend")} unit="cm" lang={lang} timeframeLabel={t(lang, "時間範圍：最近 30 天", "Timeframe: last 30 days")} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
-              <MetricHistoryChart items={chestHistory} color="#00a3a3" label={t(lang, "胸圍趨勢", "Chest Trend")} unit="cm" lang={lang} timeframeLabel={t(lang, "時間範圍：最近 30 天", "Timeframe: last 30 days")} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
+              <MetricHistoryChart items={waistHistory} color="#ff8a65" label={t(lang, "腰圍趨勢", "Waist Trend")} unit="cm" lang={lang} timeframeLabel={`${t(lang, "時間範圍：", "Timeframe: ")}${getTimeRangeLabel(range, lang)}`} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
+              <MetricHistoryChart items={hipHistory} color="#7c4dff" label={t(lang, "臀圍趨勢", "Hip Trend")} unit="cm" lang={lang} timeframeLabel={`${t(lang, "時間範圍：", "Timeframe: ")}${getTimeRangeLabel(range, lang)}`} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
+              <MetricHistoryChart items={chestHistory} color="#00a3a3" label={t(lang, "胸圍趨勢", "Chest Trend")} unit="cm" lang={lang} timeframeLabel={`${t(lang, "時間範圍：", "Timeframe: ")}${getTimeRangeLabel(range, lang)}`} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
             </div>
           </div>
 
@@ -378,8 +420,8 @@ export default async function FamilyMemberDetailPage({ params }) {
               <p className="text-sm text-slate-500">{t(lang, "看更多日常變化", "See more day-to-day changes")}</p>
             </div>
             <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <MiniMetricChart items={stepsHistory} color="#34a853" label={t(lang, "步數", "Steps")} unit="steps" compact lang={lang} timeframeLabel={t(lang, "最近 30 天", "Last 30 days")} emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")} emptyActionHref="#manage" />
-              <MiniMetricChart items={sleepHistory} color="#5c6ac4" label={t(lang, "睡眠", "Sleep")} unit="hours" compact lang={lang} timeframeLabel={t(lang, "最近 30 天", "Last 30 days")} emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")} emptyActionHref="#manage" />
+              <MiniMetricChart items={stepsHistory} color="#34a853" label={t(lang, "步數", "Steps")} unit="steps" compact lang={lang} timeframeLabel={getTimeRangeLabel(range, lang)} emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")} emptyActionHref="/integrations" />
+              <MiniMetricChart items={sleepHistory} color="#5c6ac4" label={t(lang, "睡眠", "Sleep")} unit="hours" compact lang={lang} timeframeLabel={getTimeRangeLabel(range, lang)} emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")} emptyActionHref="/integrations" />
               <MiniMetricChart
                 items={restingHeartRateHistory}
                 color="#ff6b57"
@@ -387,14 +429,14 @@ export default async function FamilyMemberDetailPage({ params }) {
                 unit="bpm"
                 compact
                 lang={lang}
-                timeframeLabel={t(lang, "最近 30 天", "Last 30 days")}
+                timeframeLabel={getTimeRangeLabel(range, lang)}
                 emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")}
-                emptyActionHref="#manage"
+                emptyActionHref="/integrations"
               />
-              <MiniMetricChart items={heartRateHistory} color="#ff8a65" label={t(lang, "心率", "Heart Rate")} unit="bpm" compact lang={lang} timeframeLabel={t(lang, "最近 30 天", "Last 30 days")} emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")} emptyActionHref="#manage" />
-              <MiniMetricChart items={waistHistory} color="#ff8a65" label={t(lang, "腰圍", "Waist")} unit="cm" compact lang={lang} timeframeLabel={t(lang, "最近 30 天", "Last 30 days")} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
-              <MiniMetricChart items={hipHistory} color="#7c4dff" label={t(lang, "臀圍", "Hip")} unit="cm" compact lang={lang} timeframeLabel={t(lang, "最近 30 天", "Last 30 days")} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
-              <MiniMetricChart items={chestHistory} color="#00a3a3" label={t(lang, "胸圍", "Chest")} unit="cm" compact lang={lang} timeframeLabel={t(lang, "最近 30 天", "Last 30 days")} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
+              <MiniMetricChart items={heartRateHistory} color="#ff8a65" label={t(lang, "心率", "Heart Rate")} unit="bpm" compact lang={lang} timeframeLabel={getTimeRangeLabel(range, lang)} emptyActionLabel={t(lang, "同步 Apple Health", "Sync Apple Health")} emptyActionHref="/integrations" />
+              <MiniMetricChart items={waistHistory} color="#ff8a65" label={t(lang, "腰圍", "Waist")} unit="cm" compact lang={lang} timeframeLabel={getTimeRangeLabel(range, lang)} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
+              <MiniMetricChart items={hipHistory} color="#7c4dff" label={t(lang, "臀圍", "Hip")} unit="cm" compact lang={lang} timeframeLabel={getTimeRangeLabel(range, lang)} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
+              <MiniMetricChart items={chestHistory} color="#00a3a3" label={t(lang, "胸圍", "Chest")} unit="cm" compact lang={lang} timeframeLabel={getTimeRangeLabel(range, lang)} emptyActionLabel={t(lang, "新增身體圍度", "Add Body Measurement")} emptyActionHref="#manage" />
             </div>
           </div>
 

@@ -32,9 +32,12 @@ export default async function RootLayout({ children }) {
             </div>
             <div className="flex flex-col gap-4 sm:items-end">
               <LanguageSwitcher lang={lang} />
-              <nav className="flex gap-5 text-sm font-medium text-slate-600">
+              <nav className="flex flex-wrap gap-5 text-sm font-medium text-slate-600">
                 <Link href="/">{t(lang, "總覽", "Overview")}</Link>
                 <Link href="/family-members">{t(lang, "家庭成員", "Family Members")}</Link>
+                <Link href="/integrations">{t(lang, "整合功能", "Integrations")}</Link>
+                <Link href="/ai-doctor">{t(lang, "AI 醫生", "AI Doctor")}</Link>
+                <Link href="/reports">{t(lang, "每週報告", "Reports")}</Link>
               </nav>
             </div>
           </header>
