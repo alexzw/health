@@ -32,7 +32,7 @@ export function MemberCard({ member, lang = "zh" }) {
   return (
     <Link
       href={`/family-members/${member.id}`}
-      className="glass-panel group rounded-[30px] p-6 shadow-glass transition duration-300 hover:-translate-y-1 hover:shadow-panel"
+      className="soft-card group rounded-[32px] p-6 transition duration-300 hover:-translate-y-1 hover:shadow-panel"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-4">
@@ -54,24 +54,31 @@ export function MemberCard({ member, lang = "zh" }) {
             </h2>
           </div>
         </div>
-        <span className="rounded-full bg-blueSoft px-3 py-1 text-sm font-medium text-blue">
+        <span className="rounded-full bg-blueSoft px-3 py-1 text-sm font-medium text-blue shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
           {member.age} {t(lang, "歲", "yrs")}
         </span>
       </div>
-      <div className="mt-5 rounded-[24px] bg-white/70 px-4 py-4">
+      <div className="metric-band mt-5 rounded-[24px] px-4 py-4">
         <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{t(lang, "個人資料", "Profile")}</p>
         <p className="mt-3 text-sm text-slate-500">
           {member.gender === "Male" ? t(lang, "男", "Male") : member.gender === "Female" ? t(lang, "女", "Female") : member.gender}
         </p>
         <p className="mt-2 text-sm text-slate-500">{formatChineseDate(member.dateOfBirth, false, lang)}</p>
       </div>
-      <p className="mt-6 text-sm text-slate-700">
-        {t(lang, "健康紀錄", "Health Records")}: {member.totalHealthRecordCount || 0}
-      </p>
-      <p className="mt-2 text-sm text-slate-500">
-        {t(lang, "運動紀錄", "Workout Records")}: {member.totalExerciseLogCount || 0}
-      </p>
-      {member.latestBmi ? <p className="mt-2 text-sm text-slate-500">BMI {member.latestBmi}</p> : null}
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-[20px] bg-slate-50 px-4 py-3">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{t(lang, "健康紀錄", "Health Records")}</p>
+          <p className="mt-1 text-lg font-semibold text-ink">{member.totalHealthRecordCount || 0}</p>
+        </div>
+        <div className="rounded-[20px] bg-slate-50 px-4 py-3">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{t(lang, "運動紀錄", "Workout Records")}</p>
+          <p className="mt-1 text-lg font-semibold text-ink">{member.totalExerciseLogCount || 0}</p>
+        </div>
+        <div className="rounded-[20px] bg-slate-50 px-4 py-3">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">BMI</p>
+          <p className="mt-1 text-lg font-semibold text-ink">{member.latestBmi || "—"}</p>
+        </div>
+      </div>
       <div className="mt-8 text-sm font-semibold text-blue transition group-hover:translate-x-1">
         {t(lang, "查看檔案", "View Profile")} →
       </div>

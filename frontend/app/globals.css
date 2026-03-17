@@ -19,8 +19,9 @@ html {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top center, rgba(0, 113, 227, 0.12), transparent 28%),
-    linear-gradient(180deg, #fbfbfd 0%, #f5f5f7 48%, #eef2f7 100%);
+    radial-gradient(circle at top center, rgba(0, 113, 227, 0.18), transparent 24%),
+    radial-gradient(circle at 82% 18%, rgba(94, 145, 255, 0.1), transparent 22%),
+    linear-gradient(180deg, #fbfbfd 0%, #f3f6fb 48%, #eef2f7 100%);
   color: var(--foreground);
   font-family: "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
 }
@@ -34,4 +35,52 @@ a {
   border: 1px solid rgba(255, 255, 255, 0.72);
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(18px);
+}
+
+.panel-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(245, 248, 255, 0.76)),
+    radial-gradient(circle at top left, rgba(0, 113, 227, 0.1), transparent 38%);
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(20px);
+}
+
+.panel-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto -8% -28% auto;
+  width: 240px;
+  height: 240px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(0, 113, 227, 0.12), transparent 65%);
+  pointer-events: none;
+}
+
+.soft-card {
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.92));
+  box-shadow: 0 18px 45px rgba(148, 163, 184, 0.12);
+}
+
+.metric-band {
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(247, 249, 252, 0.8));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.section-kicker {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgb(100 116 139);
+}
+
+.display-heading {
+  letter-spacing: -0.06em;
+  line-height: 0.95;
 }

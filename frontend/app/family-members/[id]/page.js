@@ -112,37 +112,37 @@ export default async function FamilyMemberDetailPage({ params }) {
         ← {t(lang, "返回家庭成員列表", "Back to family members")}
       </Link>
 
-      <div className="glass-panel rounded-[36px] p-8 shadow-panel">
+      <div className="panel-hero rounded-[40px] p-8 lg:p-10">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
+            <p className="section-kicker">
               {member.familyRole === "Father"
                 ? t(lang, "爸爸", "Father")
                 : member.familyRole === "Mother"
                   ? t(lang, "媽媽", "Mother")
                   : t(lang, "孩子", "Child")}
             </p>
-            <h1 className="mt-3 text-5xl font-semibold tracking-[-0.05em] text-ink">
+            <h1 className="display-heading mt-3 text-5xl font-semibold text-ink sm:text-6xl">
               {member.name}
             </h1>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <div className="rounded-2xl bg-white/80 px-4 py-3 text-sm text-ink">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="metric-band rounded-2xl px-4 py-3 text-sm text-ink">
               <span className="block text-xs uppercase tracking-[0.15em] text-slate-500">{t(lang, "年齡", "Age")}</span>
               <span className="mt-1 block font-semibold">{member.age} {t(lang, "歲", "yrs")}</span>
             </div>
-            <div className="rounded-2xl bg-white/80 px-4 py-3 text-sm text-ink">
+            <div className="metric-band rounded-2xl px-4 py-3 text-sm text-ink">
               <span className="block text-xs uppercase tracking-[0.15em] text-slate-500">{t(lang, "性別", "Gender")}</span>
               <span className="mt-1 block font-semibold">
                 {member.gender === "Male" ? t(lang, "男", "Male") : member.gender === "Female" ? t(lang, "女", "Female") : member.gender}
               </span>
             </div>
-            <div className="rounded-2xl bg-white/80 px-4 py-3 text-sm text-ink">
+            <div className="metric-band rounded-2xl px-4 py-3 text-sm text-ink">
               <span className="block text-xs uppercase tracking-[0.15em] text-slate-500">{t(lang, "生日", "Birthday")}</span>
               <span className="mt-1 block font-semibold">{formatChineseDate(member.dateOfBirth, false, lang)}</span>
             </div>
             {bmi ? (
-              <div className="rounded-2xl bg-white/80 px-4 py-3 text-sm text-ink">
+              <div className="metric-band rounded-2xl px-4 py-3 text-sm text-ink">
                 <span className="block text-xs uppercase tracking-[0.15em] text-slate-500">BMI</span>
                 <span className="mt-1 block font-semibold">{bmi}</span>
               </div>
@@ -197,22 +197,22 @@ export default async function FamilyMemberDetailPage({ params }) {
       {member.familyRole !== "Child" ? (
         <div className="space-y-5">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Adult Health Tracking</p>
+            <p className="section-kicker">Adult Health Tracking</p>
             <h2 className="mt-2 text-4xl font-semibold tracking-[-0.05em] text-ink">
               Health Summary and Trends
             </h2>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+            <div className="soft-card rounded-[28px] p-6">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Health Records</p>
               <p className="mt-2 text-3xl font-semibold text-ink">{member.totalHealthRecordCount || 0}</p>
             </div>
-            <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+            <div className="soft-card rounded-[28px] p-6">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Workout Records</p>
               <p className="mt-2 text-3xl font-semibold text-ink">{member.totalExerciseLogCount || 0}</p>
             </div>
-            <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+            <div className="soft-card rounded-[28px] p-6">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Weight</p>
               <p className="mt-2 text-3xl font-semibold text-ink">
                 {formatMetric(dashboard?.cards?.latestWeight || member.latestMetrics?.weight, {
@@ -221,7 +221,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                 })}
               </p>
             </div>
-            <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+            <div className="soft-card rounded-[28px] p-6">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Steps</p>
               <p className="mt-2 text-3xl font-semibold text-ink">
                 {formatMetric(dashboard?.cards?.latestSteps || member.latestMetrics?.steps, {
@@ -326,10 +326,10 @@ export default async function FamilyMemberDetailPage({ params }) {
 
           <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
             <div className="space-y-5">
-              <div className="glass-panel rounded-[28px] p-6 shadow-glass">
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Body Metrics</p>
+              <div className="soft-card rounded-[28px] p-6">
+                <p className="section-kicker">Body Metrics</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl bg-white/80 p-4">
+                  <div className="metric-band rounded-2xl p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Height</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(member.latestMetrics?.height, {
@@ -338,7 +338,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                       })}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-white/80 p-4">
+                  <div className="metric-band rounded-2xl p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Resting HR</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(
@@ -350,7 +350,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                       )}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-white/80 p-4">
+                  <div className="metric-band rounded-2xl p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Sleep</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(dashboard?.cards?.latestSleep || member.latestMetrics?.sleep, {
@@ -359,7 +359,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                       })}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-white/80 p-4">
+                  <div className="metric-band rounded-2xl p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Waist</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(dashboard?.cards?.latestWaist || member.latestMetrics?.waist, {
@@ -368,7 +368,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                       })}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-white/80 p-4">
+                  <div className="metric-band rounded-2xl p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Hip</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(dashboard?.cards?.latestHip || member.latestMetrics?.hip, {
@@ -377,7 +377,7 @@ export default async function FamilyMemberDetailPage({ params }) {
                       })}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-white/80 p-4">
+                  <div className="metric-band rounded-2xl p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest Chest</p>
                     <p className="mt-1 font-semibold text-ink">
                       {formatMetric(dashboard?.cards?.latestChest || member.latestMetrics?.chest, {
@@ -390,24 +390,24 @@ export default async function FamilyMemberDetailPage({ params }) {
               </div>
 
               {dashboard?.trends ? (
-                <div className="glass-panel rounded-[28px] p-6 shadow-glass">
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">7 Days vs 30 Days</p>
+                <div className="soft-card rounded-[28px] p-6">
+                  <p className="section-kicker">7 Days vs 30 Days</p>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl bg-white/80 p-4">
+                    <div className="metric-band rounded-2xl p-4">
                       <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Steps Change</p>
                       <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.steps, lang)}</p>
                     </div>
-                    <div className="rounded-2xl bg-white/80 p-4">
+                    <div className="metric-band rounded-2xl p-4">
                       <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Sleep Change</p>
                       <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.sleep, lang)}</p>
                     </div>
-                    <div className="rounded-2xl bg-white/80 p-4">
+                    <div className="metric-band rounded-2xl p-4">
                       <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Resting HR Change</p>
                       <p className="mt-1 font-semibold text-ink">
                         {formatDelta(dashboard.trends.restingHeartRate, lang)}
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-white/80 p-4">
+                    <div className="metric-band rounded-2xl p-4">
                       <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Weight Change</p>
                       <p className="mt-1 font-semibold text-ink">{formatDelta(dashboard.trends.weight, lang)}</p>
                     </div>
@@ -415,10 +415,10 @@ export default async function FamilyMemberDetailPage({ params }) {
                 </div>
               ) : null}
 
-              <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+              <div className="soft-card rounded-[28px] p-6">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{t(lang, "近期健康紀錄", "Recent Health Records")}</p>
+                    <p className="section-kicker">{t(lang, "近期健康紀錄", "Recent Health Records")}</p>
                     <h3 className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-ink">
                       {t(
                         lang,

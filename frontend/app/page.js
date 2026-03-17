@@ -83,17 +83,24 @@ export default async function HomePage() {
 
   return (
     <section className="space-y-8">
-      <div className="glass-panel overflow-hidden rounded-[40px] px-7 py-10 shadow-panel sm:px-10 lg:px-12">
+      <div className="panel-hero rounded-[44px] px-7 py-10 sm:px-10 lg:px-12 lg:py-12">
         <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
           <div>
-            <p className="text-xs uppercase tracking-[0.32em] text-slate-500">Family Health Dashboard</p>
-            <h1 className="mt-4 max-w-3xl text-5xl font-semibold tracking-[-0.06em] text-ink">
+            <p className="section-kicker">Family Health Dashboard</p>
+            <h1 className="display-heading mt-4 max-w-3xl text-5xl font-semibold text-ink sm:text-6xl">
               Family Overview
             </h1>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+              {t(
+                lang,
+                "把每位家人的重要指標收斂成清晰概覽、趨勢與提醒，先看重點，再按需要深入。",
+                "A calmer, summary-first view of each family member's key metrics, trends, and alerts."
+              )}
+            </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/family-members/alex"
-                className="rounded-full bg-blue px-5 py-3 text-sm font-semibold text-white"
+                className="rounded-full bg-blue px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_30px_rgba(0,113,227,0.24)]"
               >
                 Alex Overview
               </Link>
@@ -113,14 +120,14 @@ export default async function HomePage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-[28px] bg-white/80 p-5">
+            <div className="metric-band rounded-[28px] p-5">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Family Members</p>
               <p className="mt-2 text-3xl font-semibold text-ink">{members.length}</p>
               <p className="mt-2 text-sm text-slate-500">
                 {t(lang, "每位成員用摘要卡而不是長列表查看健康狀態。", "Use concise summary cards instead of long raw-data lists.")}
               </p>
             </div>
-            <div className="rounded-[28px] bg-white/80 p-5">
+            <div className="metric-band rounded-[28px] p-5">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Ryan Latest Growth</p>
               <p className="mt-2 text-3xl font-semibold text-ink">
                 {growth?.summary?.latestMeasurement
@@ -138,26 +145,26 @@ export default async function HomePage() {
       </div>
 
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+        <div className="soft-card rounded-[30px] p-6">
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Alex Latest Weight</p>
           <p className="mt-2 text-3xl font-semibold text-ink">
             {formatMetric(alexDashboard?.cards?.latestWeight || alex?.latestMetrics?.weight, { lang, emptyLabel: t(lang, "未有資料", "No data yet") })}
           </p>
           <p className="mt-2 text-sm text-slate-500">{buildTrendInsight(alexWeightTrend, t(lang, "體重", "Weight"), lang)}</p>
         </div>
-        <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+        <div className="soft-card rounded-[30px] p-6">
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Amelie Latest Weight</p>
           <p className="mt-2 text-3xl font-semibold text-ink">
             {formatMetric(amelieDashboard?.cards?.latestWeight || amelie?.latestMetrics?.weight, { lang, emptyLabel: t(lang, "未有資料", "No data yet") })}
           </p>
           <p className="mt-2 text-sm text-slate-500">{buildTrendInsight(amelieWeightTrend, t(lang, "體重", "Weight"), lang)}</p>
         </div>
-        <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+        <div className="soft-card rounded-[30px] p-6">
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Alex Today</p>
           <p className="mt-2 text-2xl font-semibold text-ink">{formatMetric(alexSecondaryMetric, { lang, emptyLabel: t(lang, "未有資料", "No data yet") })}</p>
           <p className="mt-2 text-sm text-slate-500">{t(lang, "常見用戶最關注步數、靜止心率和睡眠變化。", "Most people care first about steps, resting heart rate, and sleep trends.")}</p>
         </div>
-        <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+        <div className="soft-card rounded-[30px] p-6">
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Amelie Today</p>
           <p className="mt-2 text-2xl font-semibold text-ink">{formatMetric(amelieSecondaryMetric, { lang, emptyLabel: t(lang, "未有資料", "No data yet") })}</p>
           <p className="mt-2 text-sm text-slate-500">{t(lang, "以睡眠、步數或心率去看整體狀態會比 raw data 更直觀。", "Sleep, steps, and heart rate are usually more useful than raw tables.")}</p>
@@ -182,10 +189,10 @@ export default async function HomePage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <div className="glass-panel rounded-[32px] p-7 shadow-glass">
+        <div className="soft-card rounded-[32px] p-7">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Alex Mini Charts</p>
+              <p className="section-kicker">Alex Mini Charts</p>
               <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-ink">Daily Metrics</h2>
             </div>
           </div>
@@ -212,10 +219,10 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <div className="glass-panel rounded-[32px] p-7 shadow-glass">
+        <div className="soft-card rounded-[32px] p-7">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Amelie Mini Charts</p>
+              <p className="section-kicker">Amelie Mini Charts</p>
               <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-ink">Daily Metrics</h2>
             </div>
           </div>
@@ -261,35 +268,35 @@ export default async function HomePage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <div className="glass-panel rounded-[32px] p-7 shadow-glass">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Alex Trends</p>
+        <div className="soft-card rounded-[32px] p-7">
+          <p className="section-kicker">Alex Trends</p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-[22px] bg-white/80 p-4">
+            <div className="metric-band rounded-[22px] p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Steps vs 30 Days</p>
               <p className="mt-2 font-semibold text-ink">{formatDeltaLabel(alexDashboard?.trends?.steps)}</p>
             </div>
-            <div className="rounded-[22px] bg-white/80 p-4">
+            <div className="metric-band rounded-[22px] p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Sleep vs 30 Days</p>
               <p className="mt-2 font-semibold text-ink">{formatDeltaLabel(alexDashboard?.trends?.sleep)}</p>
             </div>
-            <div className="rounded-[22px] bg-white/80 p-4">
+            <div className="metric-band rounded-[22px] p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Resting HR vs 30 Days</p>
               <p className="mt-2 font-semibold text-ink">
                 {formatDeltaLabel(alexDashboard?.trends?.restingHeartRate)}
               </p>
             </div>
-            <div className="rounded-[22px] bg-white/80 p-4">
+            <div className="metric-band rounded-[22px] p-4">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Weight vs 30 Days</p>
               <p className="mt-2 font-semibold text-ink">{formatDeltaLabel(alexDashboard?.trends?.weight)}</p>
             </div>
           </div>
         </div>
 
-        <div className="glass-panel rounded-[32px] p-7 shadow-glass">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Highlights</p>
+        <div className="soft-card rounded-[32px] p-7">
+          <p className="section-kicker">Highlights</p>
           <div className="mt-5 space-y-3">
             {[...(alexDashboard?.insights || []).slice(0, 2), ...(amelieDashboard?.insights || []).slice(0, 2)].map((insight) => (
-              <div key={`${insight.title}-${insight.description}`} className="rounded-[22px] bg-white/80 p-4">
+              <div key={`${insight.title}-${insight.description}`} className="metric-band rounded-[22px] p-4">
                 <p className="text-sm font-semibold text-ink">{translateDynamicText(lang, insight.title)}</p>
                 <p className="mt-2 text-sm leading-6 text-slate-600">{translateDynamicText(lang, insight.description)}</p>
               </div>
@@ -299,11 +306,12 @@ export default async function HomePage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="glass-panel rounded-[32px] p-7 shadow-glass">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Highlights</p>
+        <div className="soft-card rounded-[32px] p-7">
+          <p className="section-kicker">Family Profiles</p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-ink">At a Glance</h2>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             {members.map((member) => (
-              <div key={member.id} className="rounded-[24px] bg-white/80 p-5">
+              <div key={member.id} className="metric-band rounded-[24px] p-5">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
                   {member.familyRole === "Father"
                     ? t(lang, "爸爸", "Father")
@@ -323,8 +331,8 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <div className="glass-panel rounded-[32px] p-7 shadow-glass">
-          <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Ryan Growth Summary</p>
+        <div className="soft-card rounded-[32px] p-7">
+          <p className="section-kicker">Ryan Growth Summary</p>
           {growth?.summary ? (
             <>
               <h2 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-ink">
@@ -337,7 +345,7 @@ export default async function HomePage() {
                   `Latest measurement: ${growth.summary.latestMeasurement.heightCm} cm and ${growth.summary.latestMeasurement.weightKg} kg.`
                 )}
               </p>
-              <div className="mt-6 rounded-[24px] bg-white/80 p-5">
+              <div className="metric-band mt-6 rounded-[24px] p-5">
                 <p className="text-sm font-semibold text-ink">{translateDynamicText(lang, growth.insights[0]?.title)}</p>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   {translateDynamicText(lang, growth.insights[0]?.description || growth.insights[0]?.detail)}
