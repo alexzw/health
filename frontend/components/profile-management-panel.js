@@ -618,32 +618,6 @@ function AppleHealthWorkflowCard({ job, onRefreshPage }) {
   );
 }
 
-function AppleHealthQuickGuide() {
-  return (
-    <div className="rounded-[24px] border border-slate-200 bg-white/80 p-5">
-      <p className="text-base font-semibold text-ink">操作方式</p>
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <div className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-          <p className="font-semibold text-ink">iCloud Drive 自動同步</p>
-          <p className="mt-2">
-            把 <code>export.zip</code> 放到
-            <span className="mx-1 rounded-full bg-white px-3 py-1 text-xs text-slate-600">
-              iCloud Drive/Apple Health/&lt;成員名稱&gt;/
-            </span>
-            ，例如 Alex 會讀取 <code>Apple Health/Alex</code>，先按預覽，再按正式匯入。
-          </p>
-        </div>
-        <div className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-          <p className="font-semibold text-ink">手動上傳 export.xml</p>
-          <p className="mt-2">
-            如果你想自己選檔，先上傳 <code>export.xml</code>，再按預覽或匯入。
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function ProfileManagementPanel({ member, growth }) {
   const router = useRouter();
   const isAdult = member.familyRole !== "Child";
@@ -1539,8 +1513,6 @@ export function ProfileManagementPanel({ member, growth }) {
 
     return (
       <div className="space-y-5">
-        <AppleHealthQuickGuide />
-
         <SectionCard
           title="Apple Health 自動匯入"
           description="建議先看預覽，再正式匯入。每一步都會顯示明確狀態。"
