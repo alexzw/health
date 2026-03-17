@@ -35,8 +35,8 @@ export default async function FamilyMembersPage() {
             <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
               {t(
                 lang,
-                "每位家庭成員都有自己的資料頁，除了查看健康紀錄，也可以直接新增和修改資料。",
-                "Each family member has a dedicated profile where you can review, add, and update health data."
+                "每張卡片會先顯示最重要的身體指標與最近同步狀態，再進一步進入完整檔案。",
+                "Each card highlights the most important body metrics and sync status before you open the full profile."
               )}
             </p>
           </div>
@@ -48,9 +48,9 @@ export default async function FamilyMembersPage() {
               <p className="mt-2 text-sm text-slate-500">{t(lang, "家人概覽集中於同一頁。", "All family profiles in one place.")}</p>
             </div>
             <div className="metric-band rounded-[26px] p-5">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "資料管理", "Data Management")}</p>
-              <p className="mt-2 text-3xl font-semibold text-ink">{t(lang, "即時", "Live")}</p>
-              <p className="mt-2 text-sm text-slate-500">{t(lang, "由卡片直接進入每位成員頁。", "Jump from each card straight into its detail page.")}</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{t(lang, "快速操作", "Quick Actions")}</p>
+              <p className="mt-2 text-3xl font-semibold text-ink">{t(lang, "可新增", "Ready")}</p>
+              <p className="mt-2 text-sm text-slate-500">{t(lang, "由卡片直接進入查看或新增記錄。", "Jump from each card to review or add records.")}</p>
             </div>
           </div>
         </div>
@@ -61,6 +61,15 @@ export default async function FamilyMembersPage() {
           {errorMessage}
         </div>
       ) : null}
+
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="section-kicker">{t(lang, "個人檔案卡片", "Profile Cards")}</p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
+            {t(lang, "選擇要管理的家庭成員", "Choose a Family Member")}
+          </h2>
+        </div>
+      </div>
 
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {members.map((member) => (

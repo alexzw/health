@@ -22,6 +22,38 @@ export function formatCompactDate(dateString, withYear = false, lang = "zh") {
   });
 }
 
+export function formatRelativeDate(dateString, lang = "zh") {
+  if (!dateString) {
+    return isEnglish(lang) ? "No recent update" : "未有最近更新";
+  }
+
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return formatChineseDate(dateString, false, lang);
+  }
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.round((today - target) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return isEnglish(lang) ? "Updated today" : "最近更新：今天";
+  }
+
+  if (diffDays === 1) {
+    return isEnglish(lang) ? "Updated yesterday" : "最近更新：昨天";
+  }
+
+  if (diffDays > 1 && diffDays <= 6) {
+    return isEnglish(lang) ? `Updated ${diffDays} days ago` : `最近更新：${diffDays} 天前`;
+  }
+
+  return isEnglish(lang)
+    ? `Updated on ${formatCompactDate(dateString, true, lang)}`
+    : `最近更新：${formatCompactDate(dateString, true, lang)}`;
+}
+
 export function formatCategoryLabel(category, lang = "zh") {
   const labels = {
     zh: {

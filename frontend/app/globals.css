@@ -6,6 +6,14 @@
   color-scheme: light;
   --background: #f5f5f7;
   --foreground: #111827;
+  --surface: rgba(255, 255, 255, 0.92);
+  --surface-soft: rgba(248, 250, 252, 0.9);
+  --border-soft: rgba(226, 232, 240, 0.92);
+  --ink-muted: rgb(100 116 139);
+  --brand: #0f766e;
+  --brand-strong: #0f6cbd;
+  --success: #12805c;
+  --warning: #b7791f;
 }
 
 * {
@@ -19,8 +27,8 @@ html {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at top center, rgba(0, 113, 227, 0.18), transparent 24%),
-    radial-gradient(circle at 82% 18%, rgba(94, 145, 255, 0.1), transparent 22%),
+    radial-gradient(circle at top center, rgba(15, 118, 110, 0.14), transparent 24%),
+    radial-gradient(circle at 82% 18%, rgba(15, 108, 189, 0.12), transparent 22%),
     linear-gradient(180deg, #fbfbfd 0%, #f3f6fb 48%, #eef2f7 100%);
   color: var(--foreground);
   font-family: "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
@@ -37,13 +45,36 @@ a {
   backdrop-filter: blur(18px);
 }
 
+.button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, var(--brand-strong), #3b82f6);
+  color: white;
+  box-shadow: 0 16px 30px rgba(15, 108, 189, 0.22);
+}
+
+.button-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--foreground);
+  box-shadow: 0 10px 24px rgba(148, 163, 184, 0.12);
+}
+
 .panel-hero {
   position: relative;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.78);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(245, 248, 255, 0.76)),
-    radial-gradient(circle at top left, rgba(0, 113, 227, 0.1), transparent 38%);
+    linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(244, 250, 250, 0.8)),
+    radial-gradient(circle at top left, rgba(15, 118, 110, 0.1), transparent 38%);
   box-shadow: 0 30px 80px rgba(15, 23, 42, 0.08);
   backdrop-filter: blur(20px);
 }
@@ -60,9 +91,9 @@ a {
 }
 
 .soft-card {
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  border: 1px solid var(--border-soft);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.92));
+    linear-gradient(180deg, var(--surface), var(--surface-soft));
   box-shadow: 0 18px 45px rgba(148, 163, 184, 0.12);
 }
 
@@ -77,10 +108,18 @@ a {
   font-weight: 700;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: rgb(100 116 139);
+  color: var(--ink-muted);
 }
 
 .display-heading {
   letter-spacing: -0.06em;
   line-height: 0.95;
+}
+
+.eyebrow-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
 }

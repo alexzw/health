@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatCompactDate, formatValueWithUnit } from "../lib/format";
 import { t } from "../lib/i18n";
 
@@ -16,16 +17,35 @@ function buildPoints(items, width, height, padding) {
     .join(" ");
 }
 
-export function MiniMetricChart({ items, color, label, unit, compact = false, lang = "zh" }) {
+export function MiniMetricChart({
+  items,
+  color,
+  label,
+  unit,
+  compact = false,
+  lang = "zh",
+  timeframeLabel,
+  emptyActionLabel,
+  emptyActionHref
+}) {
   if (!items?.length) {
     return (
       <div className="rounded-[24px] bg-white/80 p-5">
         <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{label}</p>
         <div className="mt-4 rounded-[18px] border border-dashed border-slate-200 bg-slate-50/80 px-4 py-5">
-          <p className="text-sm font-medium text-slate-600">{t(lang, "暫時未有足夠資料", "Not enough data yet")}</p>
+          <p className="text-sm font-medium text-slate-600">{t(lang, "仍未有可用趨勢資料", "No trend data yet")}</p>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            {t(lang, `之後匯入更多 ${label} 紀錄，這裡就會自動顯示最近趨勢。`, `Import more ${label} records and the latest trend will appear here automatically.`)}
+            {t(
+              lang,
+              `匯入或新增更多${label}紀錄後，這裡就會顯示最近變化。`,
+              `Import or add more ${label} records to reveal the recent trend here.`
+            )}
           </p>
+          {emptyActionLabel && emptyActionHref ? (
+            <Link href={emptyActionHref} className="button-secondary mt-4 px-4 py-2 text-sm font-semibold">
+              {emptyActionLabel}
+            </Link>
+          ) : null}
         </div>
       </div>
     );
@@ -43,6 +63,7 @@ export function MiniMetricChart({ items, color, label, unit, compact = false, la
         <div>
           <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{label}</p>
           <p className="mt-2 text-2xl font-semibold text-ink">{formatValueWithUnit(latestItem.value, unit, { lang })}</p>
+          {timeframeLabel ? <p className="mt-2 text-xs text-slate-500">{timeframeLabel}</p> : null}
         </div>
         <p className="text-xs text-slate-500">{formatCompactDate(latestItem.date, false, lang)}</p>
       </div>

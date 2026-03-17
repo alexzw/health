@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatCompactDate, formatValueWithUnit } from "../lib/format";
 import { t } from "../lib/i18n";
 
@@ -25,18 +26,39 @@ function buildPoints(items, width, height, padding) {
     .join(" ");
 }
 
-export function MetricHistoryChart({ items, color, label, unit, lang = "zh" }) {
+export function MetricHistoryChart({
+  items,
+  color,
+  label,
+  unit,
+  lang = "zh",
+  timeframeLabel,
+  emptyTitle,
+  emptyDescription,
+  emptyActionLabel,
+  emptyActionHref
+}) {
   if (!items.length) {
     return (
-      <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+      <div className="soft-card rounded-[28px] p-6">
         <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{label}</p>
         <div className="mt-4 rounded-[22px] border border-dashed border-slate-200 bg-white/70 px-5 py-6">
           <p className="text-sm font-medium text-slate-700">
-            {t(lang, "這張圖會用來看最近一段時間的變化。", "This chart shows how the metric changes over time.")}
+            {emptyTitle || t(lang, "暫時未有足夠資料可繪製這張圖。", "No chart data yet.")}
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            {t(lang, "目前這一類資料還不夠，所以先不畫圖；之後累積多幾日紀錄後會自動出現。", "There is not enough data in this category yet, so the chart will appear automatically after more records are added.")}
+            {emptyDescription ||
+              t(
+                lang,
+                "先補上這類健康資料，之後就可以在這裡看到清晰趨勢。",
+                "Add more records in this category to unlock a clear trend view here."
+              )}
           </p>
+          {emptyActionLabel && emptyActionHref ? (
+            <Link href={emptyActionHref} className="button-secondary mt-4 px-4 py-2 text-sm font-semibold">
+              {emptyActionLabel}
+            </Link>
+          ) : null}
         </div>
       </div>
     );
@@ -49,13 +71,14 @@ export function MetricHistoryChart({ items, color, label, unit, lang = "zh" }) {
   const points = buildPoints(items, width, height, padding);
 
   return (
-    <div className="glass-panel rounded-[28px] p-6 shadow-glass">
+    <div className="soft-card rounded-[28px] p-6">
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.24em] text-slate-500">{label}</p>
           <h3 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-ink">
             {formatValueWithUnit(latestItem.value, unit, { lang })}
           </h3>
+          {timeframeLabel ? <p className="mt-2 text-sm text-slate-500">{timeframeLabel}</p> : null}
         </div>
         <p className="text-sm text-slate-500">{formatCompactDate(latestItem.date, true, lang)}</p>
       </div>

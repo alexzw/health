@@ -442,7 +442,9 @@ export default async function FamilyMemberDetailPage({ params }) {
         </div>
       ) : null}
 
-      <ProfileManagementPanel member={member} growth={growth} lang={lang} />
+      <div id="manage">
+        <ProfileManagementPanel member={member} growth={growth} lang={lang} />
+      </div>
     </section>
   );
 }
